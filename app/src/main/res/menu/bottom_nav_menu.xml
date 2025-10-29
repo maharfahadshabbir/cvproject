@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/homeFragment"
+        android:icon="@drawable/home"
+        android:title="@string/home"/>
+
+    <item
+        android:id="@+id/templatesFragment"
+        android:icon="@drawable/template"
+        android:title="@string/templates"/>
+
+    <item
+        android:id="@+id/createsFragment"
+        android:icon="@drawable/create"
+        android:title="@string/create"/>
+
+    <item
+        android:id="@+id/questionsFragment"
+        android:icon="@drawable/question"
+        android:title="@string/question"/>
+
+    <item
+        android:id="@+id/toolsFragment"
+        android:icon="@drawable/tools"
+        android:title="@string/tools"/>
+
+</menu>

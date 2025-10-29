@@ -1,0 +1,106 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/rounded_top_corners">
+
+    <ImageView
+        android:id="@+id/bottomSheetGrapple"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/_5sdp"
+        android:src="@drawable/ic_bottom_sheet_grapple"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/_10sdp"
+        android:layout_marginTop="@dimen/_28sdp"
+        android:fontFamily="@font/poppins_regular"
+        android:paddingHorizontal="@dimen/_5sdp"
+        android:text="@string/delete"
+        android:textAlignment="center"
+        android:textColor="@color/black"
+        android:textSize="@dimen/_14sdp"
+        android:textStyle="bold"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+
+
+            <TextView
+                android:id="@+id/rename_txt"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/are_you_sure_you_want_to_delete_this_item"
+                android:fontFamily="@font/poppins_regular"
+                android:textColor="@color/gray_tx_color"
+                android:layout_marginHorizontal="@dimen/_12sdp"
+                android:layout_marginVertical="@dimen/_12sdp"
+                android:paddingVertical="@dimen/_12sdp"
+                android:paddingHorizontal="@dimen/_10sdp"
+                android:textSize="@dimen/_12sdp"
+                android:textStyle="bold"
+                app:layout_constraintTop_toBottomOf="@id/text"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                />
+
+
+
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/cancel_button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/_12sdp"
+        android:layout_marginBottom="@dimen/_10sdp"
+        android:fontFamily="@font/poppins_regular"
+        android:layout_marginTop="@dimen/_20sdp"
+        android:text="@string/cancel"
+        android:backgroundTint="@color/white"
+        android:background="@drawable/blue_gradient"
+        android:paddingVertical="@dimen/_8sdp"
+        android:textAllCaps="false"
+        android:textColor="@color/black"
+        android:textSize="@dimen/_12sdp"
+        app:layout_constraintVertical_bias="0"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/delete_button"
+        app:layout_constraintTop_toBottomOf="@id/rename_txt"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/delete_button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/_12sdp"
+        android:layout_marginBottom="@dimen/_10sdp"
+        android:fontFamily="@font/poppins_regular"
+        android:layout_marginTop="@dimen/_20sdp"
+        android:text="@string/delete"
+        android:background="@drawable/blue_gradient"
+        android:paddingVertical="@dimen/_8sdp"
+        app:cornerRadius="@dimen/_5sdp"
+        android:textAllCaps="false"
+        android:textColor="@color/white"
+        android:textSize="@dimen/_12sdp"
+        app:layout_constraintVertical_bias="0"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@id/cancel_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/rename_txt" />
+
+
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

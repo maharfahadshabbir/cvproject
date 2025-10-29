@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="blue">#0075FF</color>
+    <color name="light_blue_border">#331A83FF</color>
+    <color name="light_blue">#CCE3FF</color>
+    <color name="light_black">#999999</color>
+    <color name="transparent">#00FFFFFF</color>
+
+    <color name="home_card_textcolors">#333333</color>
+    <color name="colorAdsBackground">#F3F3F3</color>
+    <color name="colorText">#000000</color>
+    <color name="colorTextPremium">#11A6FF</color>
+
+    <color name="gray_tx_color">#666666</color>
+    <color name="textColor">#222222</color>
+    <color name="red">#BA2727</color>
+
+</resources>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Empty stars (background) -->
+    <item android:id="@android:id/background">
+        <bitmap android:src="@drawable/ic_star_outline_24" android:tileMode="repeat"/>
+    </item>
+
+    <!-- Partial star (not used with stepSize=1 but kept for completeness) -->
+    <item android:id="@android:id/secondaryProgress">
+        <bitmap android:src="@drawable/ic_star_filled_24" android:tileMode="repeat"/>
+    </item>
+
+    <!-- Filled stars (progress) -->
+    <item android:id="@android:id/progress">
+        <bitmap android:src="@drawable/ic_star_filled_24" android:tileMode="repeat"/>
+    </item>
+</layer-list>

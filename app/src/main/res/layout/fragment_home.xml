@@ -1,0 +1,431 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context=".fragments.HomeFragment">
+
+
+    <ImageView
+        android:id="@+id/setting_ic"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/setting_icon"
+        android:layout_marginTop="@dimen/_10sdp"
+        android:layout_marginEnd="@dimen/_10sdp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/bg_home" />
+
+    <TextView
+        android:id="@+id/pro_ic"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:drawableStart="@drawable/crown_ic"
+        android:text="Pro"
+        android:textColor="@color/white"
+        android:paddingHorizontal="@dimen/_10sdp"
+        android:paddingVertical="@dimen/_5sdp"
+        android:gravity="center"
+        android:layout_marginEnd="@dimen/_10sdp"
+        android:textAlignment="center"
+        android:background="@drawable/blue_horizantal_gradient_less_rounded"
+        app:layout_constraintEnd_toStartOf="@id/setting_ic"
+        app:layout_constraintTop_toTopOf="@id/setting_ic"
+        app:layout_constraintBottom_toBottomOf="@id/setting_ic"/>
+
+    <View
+        android:id="@+id/bg_home"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@drawable/home_bg"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_percent="0.3"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+
+    <TextView
+        android:id="@+id/app_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/_10sdp"
+        android:layout_marginBottom="@dimen/_10sdp"
+        android:layout_marginTop="@dimen/_10sdp"
+        android:text="@string/ai_powered_ncv_maker"
+        android:paddingEnd="@dimen/_17sdp"
+        android:textColor="@color/black"
+        android:textSize="@dimen/_14sdp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@id/subText"
+        app:layout_constraintStart_toStartOf="@id/bg_home" />
+
+
+    <TextView
+        android:id="@+id/subText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/_10sdp"
+        android:text="Create your own resume like a \nPro"
+        android:textColor="@color/black"
+        android:textSize="@dimen/_10sdp"
+        android:textStyle=""
+        app:layout_constraintBottom_toTopOf="@id/createAiCv"
+        app:layout_constraintEnd_toEndOf="@id/app_name"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintStart_toStartOf="@id/app_name"
+        app:layout_constraintWidth_percent="0.5" />
+
+    <TextView
+        android:id="@+id/createAiCv"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/_25sdp"
+        android:layout_marginTop="@dimen/_20sdp"
+        android:layout_marginBottom="@dimen/_20sdp"
+        android:background="@drawable/blue_horizantal_gradient"
+        android:gravity="center"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:paddingHorizontal="@dimen/_15sdp"
+        android:text="Create Cv"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toBottomOf="@id/bg_home"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintStart_toStartOf="@id/app_name" />
+
+
+    <ScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/bg_home"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Get Hired Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Get Hired Right Away"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#000"
+                android:layout_marginBottom="12dp"/>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <!-- Create Profile Card -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardProfile"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_marginEnd="8dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardBackgroundColor="#F8DAD5"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintEnd_toStartOf="@+id/cardCoverLetter">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:paddingBottom="@dimen/_5sdp"
+                        android:gravity="center">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_gravity="start"
+                            android:layout_marginTop="@dimen/_8sdp"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:src="@drawable/profile_ic"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Create Your Profile"
+                            android:textStyle="bold"
+                            android:layout_gravity="start"
+                            android:layout_marginTop="@dimen/_5sdp"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:textColor="#000"
+                            android:textSize="14sp"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Edit and Create Your Profile"
+                            android:textColor="#555"
+                            android:layout_gravity="start"
+                            android:layout_marginVertical="@dimen/_3sdp"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:textSize="11sp"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- AI Cover Letter Card -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardCoverLetter"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_marginStart="8dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardBackgroundColor="#C6F0CC"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/cardProfile"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:paddingBottom="@dimen/_5sdp"
+                        android:gravity="center">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginTop="@dimen/_8sdp"
+                            android:layout_gravity="start"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:src="@drawable/ic_ai"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="AI Cover Letter"
+                            android:textStyle="bold"
+                            android:layout_gravity="start"
+                            android:layout_marginTop="@dimen/_5sdp"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:textColor="#000"
+                            android:textSize="14sp"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Craft Standout Cover Letter"
+                            android:textColor="#555"
+                            android:layout_marginVertical="@dimen/_3sdp"
+                            android:layout_gravity="start"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:textSize="11sp"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <!-- Other Letters Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Other Letters"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:textColor="#000" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="See all ›"
+                    android:textColor="#0085FF"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- Other Letters Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:padding="@dimen/_3sdp"
+                android:orientation="horizontal">
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="90dp"
+                    android:layout_marginEnd="5sp"
+                    android:layout_margin="@dimen/_2sdp"
+                    app:cardBackgroundColor="#EBF4FF"
+                    app:cardCornerRadius="12dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="@dimen/_5sdp"
+                        android:gravity="center">
+
+                        <ImageView
+                            android:layout_width="33dp"
+                            android:layout_height="33dp"
+                            android:layout_marginTop="@dimen/_8sdp"
+                            android:layout_gravity="start"
+                            android:layout_marginStart="@dimen/_5sdp"
+                            android:src="@drawable/resiganation_letter"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Resignation \nLetter"
+                            android:textStyle="bold"
+                            android:layout_gravity="start"
+                            android:layout_marginTop="@dimen/_5sdp"
+                            android:layout_marginStart="@dimen/_5sdp"
+                            android:textColor="#000"
+                            android:textSize="11sp"/>
+
+
+                    </LinearLayout>
+
+
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="90dp"
+                    android:layout_marginHorizontal="@dimen/_5sdp"
+                    app:cardBackgroundColor="#FFEFF7"
+                    android:layout_margin="@dimen/_2sdp"
+                    app:cardCornerRadius="12dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="@dimen/_5sdp"
+                        android:gravity="center">
+
+                        <ImageView
+                            android:layout_width="33dp"
+                            android:layout_height="33dp"
+                            android:layout_marginTop="@dimen/_8sdp"
+                            android:layout_gravity="start"
+                            android:layout_marginStart="@dimen/_5sdp"
+                            android:src="@drawable/promotion_ic"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Promotion \nLetter"
+                            android:textStyle="bold"
+                            android:layout_gravity="start"
+                            android:layout_marginTop="@dimen/_5sdp"
+                            android:layout_marginStart="@dimen/_5sdp"
+                            android:textColor="#000"
+                            android:textSize="11sp"/>
+
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="90dp"
+                    android:layout_marginStart="@dimen/_5sdp"
+                    android:layout_margin="@dimen/_2sdp"
+                    app:cardBackgroundColor="#EAE8FF"
+                    app:cardCornerRadius="12dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="@dimen/_5sdp"
+                        android:gravity="center">
+
+                        <ImageView
+                            android:layout_width="33dp"
+                            android:layout_height="33dp"
+                            android:layout_marginTop="@dimen/_8sdp"
+                            android:layout_gravity="start"
+                            android:layout_marginStart="@dimen/_5sdp"
+                            android:src="@drawable/refrence_letter"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Reference \nLetter"
+                            android:textStyle="bold"
+                            android:layout_gravity="start"
+                            android:layout_marginTop="@dimen/_5sdp"
+                            android:layout_marginStart="@dimen/_5sdp"
+                            android:textColor="#000"
+                            android:textSize="11sp"/>
+
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+            </LinearLayout>
+
+            <!-- Trending Templates Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Trending Templates"
+                    android:textStyle="bold"
+                    android:layout_weight="1"
+                    android:textSize="16sp"
+                    android:textColor="#000"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="See all ›"
+                    android:textColor="#0085FF"
+                    android:textSize="13sp"/>
+            </LinearLayout>
+
+            <!-- Trending Templates Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="140dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_margin="@dimen/_2sdp"
+                    app:cardCornerRadius="16dp"/>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_margin="@dimen/_2sdp"
+                    android:layout_height="140dp"
+                    app:cardCornerRadius="16dp"/>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

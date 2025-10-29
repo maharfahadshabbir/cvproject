@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/splashFragment">
+
+    <fragment
+        android:id="@+id/splashFragment"
+        android:name="com.example.cvmaker.fragments.SplashFragment"
+        android:label="fragment_splash"
+        tools:layout="@layout/fragment_splash" />
+    <fragment
+        android:id="@+id/languageFragment"
+        android:name="com.example.cvmaker.fragments.LanguageFragment"
+        android:label="LanguageFragment" />
+    <fragment
+        android:id="@+id/onboardingFragment"
+        android:name="com.example.cvmaker.fragments.OnboardingFragment"
+        android:label="OnboardingFragment" />
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.example.cvmaker.fragments.HomeFragment"
+        android:label="fragment_home"
+        tools:layout="@layout/fragment_home" >
+        <action
+            android:id="@+id/action_homeFragment_to_profileDraftFragment"
+            app:destination="@id/profileDraftFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/createsFragment"
+        android:name="com.example.cvmaker.fragments.CreatesFragment"
+        android:label="fragment_creates"
+        tools:layout="@layout/fragment_creates" />
+    <fragment
+        android:id="@+id/questionsFragment"
+        android:name="com.example.cvmaker.fragments.QuestionsFragment"
+        android:label="fragment_questions"
+        tools:layout="@layout/fragment_questions" />
+    <fragment
+        android:id="@+id/templatesFragment"
+        android:name="com.example.cvmaker.fragments.TemplatesFragment"
+        android:label="fragment_templates"
+        tools:layout="@layout/fragment_templates" />
+    <fragment
+        android:id="@+id/toolsFragment"
+        android:name="com.example.cvmaker.fragments.ToolsFragment"
+        android:label="fragment_tools"
+        tools:layout="@layout/fragment_tools" />
+    <fragment
+        android:id="@+id/profileDraftFragment"
+        android:name="com.example.cvmaker.fragments.ProfileDraftFragment"
+        android:label="ProfileDraftFragment" >
+        <action
+            android:id="@+id/action_profileDraftFragment_to_createProfileFragment"
+            app:destination="@id/createProfileFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/createProfileFragment"
+        android:name="com.example.cvmaker.fragments.profile.CreateProfileFragment"
+        android:label="fragment_create_profile"
+        tools:layout="@layout/fragment_create_profile" >
+        <action
+            android:id="@+id/action_createProfileFragment_to_achievementsDetailsFragment"
+            app:destination="@id/achievementsDetailsFragment" />
+        <action
+            android:id="@+id/action_createProfileFragment_to_certificationDetailsFragment"
+            app:destination="@id/certificationDetailsFragment" />
+        <action
+            android:id="@+id/action_createProfileFragment_to_personalDetailFragment"
+            app:destination="@id/personalDetailFragment" />
+        <action
+            android:id="@+id/action_createProfileFragment_to_interestDetailFragment"
+            app:destination="@id/interestDetailFragment" />
+        <action
+            android:id="@+id/action_createProfileFragment_to_skillsDetailsFragment"
+            app:destination="@id/skillsDetailsFragment" />
+        <action
+            android:id="@+id/action_createProfileFragment_to_portfolioDetailsFragment"
+            app:destination="@id/portfolioDetailsFragment" />
+        <action
+            android:id="@+id/action_createProfileFragment_to_languageDetailsFragment"
+            app:destination="@id/languageDetailsFragment" />
+        <action
+            android:id="@+id/action_createProfileFragment_to_experienceDetailFragment"
+            app:destination="@id/experienceDetailFragment" />
+        <action
+            android:id="@+id/action_createProfileFragment_to_educationDetailFragment"
+            app:destination="@id/educationDetailFragment" />
+        <action
+            android:id="@+id/action_createProfileFragment_to_objectiveFragment"
+            app:destination="@id/objectiveFragment" />
+        <action
+            android:id="@+id/action_createProfileFragment_to_referencesDetailFragment"
+            app:destination="@id/referencesDetailFragment" />
+        <action
+            android:id="@+id/action_createProfileFragment_to_projectDetailsFragment"
+            app:destination="@id/projectDetailsFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/achievementsDetailsFragment"
+        android:name="com.example.cvmaker.fragments.profiledetail.AchievementsDetailsFragment"
+        android:label="AchievementsDetailsFragment" />
+    <fragment
+        android:id="@+id/certificationDetailsFragment"
+        android:name="com.example.cvmaker.fragments.profiledetail.CertificationDetailsFragment"
+        android:label="CertificationDetailsFragment" />
+    <fragment
+        android:id="@+id/interestDetailFragment"
+        android:name="com.example.cvmaker.fragments.profiledetail.InterestDetailFragment"
+        android:label="InterestDetailFragment" />
+    <fragment
+        android:id="@+id/newDraftFragment"
+        android:name="com.example.cvmaker.fragments.profile.NewDraftFragment"
+        android:label="NewDraftFragment" />
+    <fragment
+        android:id="@+id/newProfileFragment"
+        android:name="com.example.cvmaker.fragments.profile.NewProfileFragment"
+        android:label="NewProfileFragment" />
+    <fragment
+        android:id="@+id/personalDetailFragment"
+        android:name="com.example.cvmaker.fragments.profiledetail.PersonalDetailFragment"
+        android:label="PersonalDetailFragment" />
+    <fragment
+        android:id="@+id/portfolioDetailsFragment"
+        android:name="com.example.cvmaker.fragments.profiledetail.PortfolioDetailsFragment"
+        android:label="PortfolioDetailsFragment" />
+    <fragment
+        android:id="@+id/skillsDetailsFragment"
+        android:name="com.example.cvmaker.fragments.profiledetail.SkillsDetailsFragment"
+        android:label="SkillsDetailsFragment" />
+    <fragment
+        android:id="@+id/educationDetailFragment"
+        android:name="com.example.cvmaker.fragments.profiledetail.EducationDetailFragment"
+        android:label="fragment_education_detail"
+        tools:layout="@layout/fragment_education_detail" />
+    <fragment
+        android:id="@+id/experienceDetailFragment"
+        android:name="com.example.cvmaker.fragments.profiledetail.ExperienceDetailFragment"
+        android:label="fragment_experience_detail"
+        tools:layout="@layout/fragment_experience_detail" />
+    <fragment
+        android:id="@+id/languageDetailsFragment"
+        android:name="com.example.cvmaker.fragments.profiledetail.LanguageDetailsFragment"
+        android:label="fragment_language_details"
+        tools:layout="@layout/fragment_language_details" />
+    <fragment
+        android:id="@+id/objectiveFragment"
+        android:name="com.example.cvmaker.fragments.profiledetail.ObjectiveFragment"
+        android:label="fragment_objective"
+        tools:layout="@layout/fragment_objective" />
+    <fragment
+        android:id="@+id/referencesDetailFragment"
+        android:name="com.example.cvmaker.fragments.profiledetail.ReferencesDetailFragment"
+        android:label="fragment_references_detail"
+        tools:layout="@layout/fragment_references_detail" />
+    <fragment
+        android:id="@+id/projectDetailsFragment"
+        android:name="com.example.cvmaker.fragments.profiledetail.ProjectDetailsFragment"
+        android:label="fragment_project_details"
+        tools:layout="@layout/fragment_project_details" />
+</navigation>

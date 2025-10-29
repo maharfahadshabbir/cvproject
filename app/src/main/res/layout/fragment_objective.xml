@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/frameLayout4"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/app_bg"
+    tools:context=".fragments.profiledetail.ObjectiveFragment">
+
+    <!-- Toolbar -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:paddingHorizontal="@dimen/_10sdp"
+        android:paddingVertical="@dimen/_6sdp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/backButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/_8sdp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="@dimen/_5sdp"
+            android:src="@drawable/arrow_back"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/toolbarTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/_6sdp"
+            android:fontFamily="@font/poppins_regular"
+            android:text="@string/objective"
+            android:textColor="@color/black"
+            android:textSize="@dimen/_14sdp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@id/backButton"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/preview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/_10sdp"
+            android:background="@drawable/preview_bg"
+            android:padding="@dimen/_3sdp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/preview_cv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/_8sdp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/preview_icon"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/expnextbtn"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/expnextbtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/_4sdp"
+                android:fontFamily="@font/poppins_regular"
+                android:text="@string/preview"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="@dimen/_12sdp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/preview_cv"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Scrollable content between Toolbar and Save -->
+    <ScrollView
+        android:id="@+id/scrollObjective"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:paddingHorizontal="@dimen/_12sdp"
+        android:paddingBottom="@dimen/_10sdp"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
+        app:layout_constraintBottom_toTopOf="@id/btn_save">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/objectiveContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <!-- Objective input card -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/etCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/_12sdp"
+                android:background="@drawable/ic_bg_pro"
+                android:padding="@dimen/_10sdp"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <jp.wasabeef.richeditor.RichEditor
+                    android:id="@+id/etObjective"
+                    android:layout_width="match_parent"
+                    android:layout_height="180dp"
+                    android:background="@android:color/transparent"
+                    android:gravity="top|start"
+                    android:hint="Leadership"
+                    android:padding="@dimen/_6sdp"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:maxLines="8"
+                    android:minLines="6"
+                    android:overScrollMode="ifContentScrolls"
+                    android:textColor="@color/textColor"
+                    android:textColorHint="@color/gray_tx_color"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    android:textSize="@dimen/_12sdp" />
+
+                <TextView
+                    android:id="@+id/textviewforhint"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_margin="@dimen/_5sdp"
+                    android:hint="Leadership"
+                    android:textColorHint="@color/gray_tx_color"
+                    android:textSize="@dimen/_11sdp"
+                    app:layout_constraintBottom_toBottomOf="@id/etObjective"
+                    app:layout_constraintEnd_toEndOf="@id/etObjective"
+                    app:layout_constraintStart_toStartOf="@id/etObjective"
+                    app:layout_constraintTop_toTopOf="@id/etObjective" />
+
+
+                <!-- Formatting toolbar -->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/formatBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/_8sdp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/etObjective">
+
+                    <!-- Use ImageButtons with your icons. All share the same bg for rounded outline. -->
+                    <ImageButton
+                        android:id="@+id/btnBold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/white"
+                        android:src="@drawable/ic_bold"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@+id/btnItalic"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <ImageButton
+                        android:id="@+id/btnItalic"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/white"
+                        android:src="@drawable/ic_italic"
+                        app:layout_constraintEnd_toStartOf="@+id/btnUnderline"
+                        app:layout_constraintStart_toEndOf="@id/btnBold"
+                        app:layout_constraintTop_toTopOf="parent"
+                         />
+
+                    <ImageButton
+                        android:id="@+id/btnUnderline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/white"
+                        android:src="@drawable/ic_underline"
+                        app:layout_constraintStart_toEndOf="@id/btnItalic"
+                        app:layout_constraintEnd_toStartOf="@+id/btnBullets"
+                        app:layout_constraintTop_toTopOf="parent"
+                        />
+
+                    <ImageView
+                        android:id="@+id/divider1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="20dp"
+                        android:src="@drawable/middle_divider"
+                        app:layout_constraintTop_toTopOf="parent"
+                        android:layout_marginHorizontal="@dimen/_4sdp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/btnUnderline"
+                        app:layout_constraintEnd_toStartOf="@+id/btnBullets"/>
+
+
+                    <ImageButton
+                        android:id="@+id/btnBullets"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/white"
+                        android:src="@drawable/ic_list_bulleted"
+                        app:layout_constraintEnd_toStartOf="@+id/btnNumbers"
+                        app:layout_constraintStart_toEndOf="@id/divider1"
+                        app:layout_constraintTop_toTopOf="parent"
+                         />
+
+                    <ImageButton
+                        android:id="@+id/btnNumbers"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/white"
+                        android:src="@drawable/ic_list_numbered"
+                        app:layout_constraintEnd_toStartOf="@+id/btnUndo"
+                        app:layout_constraintStart_toEndOf="@id/btnBullets"
+                        app:layout_constraintTop_toTopOf="parent"
+                         />
+
+                    <ImageView
+                        android:id="@+id/divider2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="20dp"
+                        android:src="@drawable/middle_divider"
+                        android:layout_marginHorizontal="@dimen/_4sdp"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/btnNumbers"
+                        app:layout_constraintEnd_toStartOf="@+id/btnUndo"/>
+
+                    <ImageButton
+                        android:id="@+id/btnUndo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/white"
+                        android:src="@drawable/ic_undo"
+                        app:layout_constraintStart_toEndOf="@id/divider2"
+                        app:layout_constraintEnd_toStartOf="@+id/btnRedo"
+                        app:layout_constraintTop_toTopOf="parent"
+                        />
+
+                    <ImageButton
+                        android:id="@+id/btnRedo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/white"
+                        android:src="@drawable/ic_redo"
+                        app:layout_constraintStart_toEndOf="@id/btnUndo"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+
+    <!-- Save -->
+    <TextView
+        android:id="@+id/btn_save"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="@dimen/_16sdp"
+        android:layout_marginBottom="@dimen/_12sdp"
+        android:background="@drawable/blue_gradient"
+        android:fontFamily="@font/poppins_semi_bold"
+        android:gravity="center"
+        android:text="@string/save"
+        android:textAllCaps="false"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
