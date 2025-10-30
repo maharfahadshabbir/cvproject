@@ -1,7 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    id("com.google.devtools.ksp")              // ✅ use KSP
+    id("com.google.devtools.ksp")                  // ✅ correct order (before Hilt)
+    id("com.google.dagger.hilt.android")           // ✅ use official plugin ID
     id("androidx.navigation.safeargs.kotlin")
     id("com.google.firebase.crashlytics")
     id("kotlin-parcelize")
@@ -66,10 +67,15 @@ dependencies {
     // Navigation (latest)
     implementation("androidx.navigation:navigation-fragment-ktx:2.9.5")
     implementation("androidx.navigation:navigation-ui-ktx:2.9.5")          // ⬆ :contentReference[oaicite:4]{index=4}
-
-    // Hilt (Dagger) — use KSP
-    implementation("com.google.dagger:hilt-android:2.57.2")                 // ⬆ :contentReference[oaicite:5]{index=5}
+    // --------------------------------------------------------
+    // 🧩 Hilt (Dagger) + KSP
+    // --------------------------------------------------------
+    implementation("com.google.dagger:hilt-android:2.57.2")
     ksp("com.google.dagger:hilt-compiler:2.57.2")
+
+    // Optional — Hilt extensions for WorkManager / Navigation
+    implementation("androidx.hilt:hilt-navigation-fragment:1.2.0")
+    ksp("androidx.hilt:hilt-compiler:1.2.0")
 
     // Lifecycle (latest stable 2.9.3)
     implementation("androidx.lifecycle:lifecycle-process:2.9.3")            // ⬆

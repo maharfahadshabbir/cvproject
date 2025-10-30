@@ -9,9 +9,12 @@ data class CvModelRequestEntity(
     val id: Long = 0,
     val json: String, // JSON representation of CvModelRequest
     val draftName: String,
+    val profileOrDraft: Boolean,
     val updateDate: String,
     val creationDate: String,
-    var imageName: String? = null
+    var imageName: String? = null,
+    val userId: String // 👈 New field for unique user
+
 
 )
 

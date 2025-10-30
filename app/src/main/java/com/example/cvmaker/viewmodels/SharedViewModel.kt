@@ -11,6 +11,8 @@ import com.example.cvmaker.coverletter.CoverLetterResponse
 import com.example.cvmaker.cv.CvType
 import com.example.cvmaker.model.profilemodels.ProfileModelUI
 import com.example.cvmaker.model.profilemodels.profile.UpdateProfileModdel
+import com.example.cvmaker.model.workingmodels.CvModelRequestDb
+import com.example.cvmaker.model.workingmodels.PersonalDetailModel
 import java.io.File
 import java.io.InputStream
 
@@ -19,6 +21,18 @@ class SharedViewModel : ViewModel() {
     companion object{
         var selectedProfile: ProfileModelUI?  = null
     }
+
+
+    //working
+    var cvModelRequestDb = CvModelRequestDb()
+
+
+    val personalDetailsList = mutableListOf<PersonalDetailModel>()
+
+
+
+
+    //working//
     var popUp30percent: Boolean = false
     var thumbNail: String = ""
     var categoriesTemplateValue: Boolean = false
