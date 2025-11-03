@@ -2,367 +2,365 @@ package com.example.cvmaker.fragments.profiledetail
 
 import android.graphics.Rect
 import android.os.Bundle
-import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import androidx.activity.OnBackPressedCallback
 import androidx.core.view.isVisible
+import androidx.core.widget.addTextChangedListener
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.cvmaker.R
-import com.example.cvmaker.activities.MainActivity
 import com.example.cvmaker.databinding.FragmentReferencesDetailBinding
 import com.example.cvmaker.fragments.profiledetail.adapters.ReferencesAdapter
 import com.example.cvmaker.fragments.profiledetail.util.ViewUtils
 import com.example.cvmaker.fragments.profiledetail.util.ViewUtils.checkProfileCase
-import com.example.cvmaker.fragments.profiledetail.util.ViewUtils.previewCv
-import com.example.cvmaker.fragments.profiledetail.util.bottomsheets.RemoveItemBottomSheet
-import com.example.cvmaker.model.profilemodels.Reference
+import com.example.cvmaker.model.workingmodels.ReferenceModel
 import com.example.cvmaker.utils.showToastSafe
 import com.example.cvmaker.viewmodels.SharedViewModel
-import kotlin.getValue
-
 
 class ReferencesDetailFragment : Fragment() {
 
-
     private lateinit var binding: FragmentReferencesDetailBinding
 
-
-    companion object{
-        val OnItemRemoved:(() -> Unit)? = null
-    }
-
+    // If you later want to show the list, this adapter already supports ReferenceModel.
     private lateinit var adapter: ReferencesAdapter
+
     private val sharedViewModel by activityViewModels<SharedViewModel>()
 
+    /** The index inside cvModelRequestDb.referenceList currently being edited in the big block */
+    private var currentIndex = 0
+
+    private var onBackPressedCallback: OnBackPressedCallback? = null
+
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        binding = FragmentReferencesDetailBinding.inflate(layoutInflater)
-        val onBackPressedCallback = object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                backPressed()
-            }
-        }
-        requireActivity().onBackPressedDispatcher.addCallback(
-            viewLifecycleOwner,
-            onBackPressedCallback
-        )
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View {
+        binding = FragmentReferencesDetailBinding.inflate(inflater, container, false)
+        configureBackPress()
         return binding.root
-
     }
-
-    private fun backPressed() {
-
-        findNavController().popBackStack()
-//        sharedViewModel.cvModel.references.clear()
-//        adapter.submitList(sharedViewModel.cvModel.references)
-//        adapter.notifyDataSetChanged()
-    }
-
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        initListner()
+        setupKeyboardPadding(view)
+        ensureListHasAtLeastOne()
+        bindCurrentItemToViews()
+        attachLiveFieldWriters()
+        setupClicks()
+        setupOptionalRecycler()
 
-        binding.apply {
-
-
-            view.viewTreeObserver.addOnGlobalLayoutListener {
-                val rect = Rect()
-                view.getWindowVisibleDisplayFrame(rect)
-                val screenHeight = view.rootView.height
-                val keypadHeight = screenHeight - rect.bottom
-                if (keypadHeight > screenHeight * 0.15) {
-                    onKeyboardShown(keypadHeight)
-                } else {
-                    onKeyboardHidden()
-                }
-            }
-
-        }
-    }
-
-    private fun onKeyboardShown(keyboardHeight: Int) {
-//        val params = binding.scrollReferences.layoutParams as ViewGroup.MarginLayoutParams
-//        params.set(
-//            params.leftMargin,
-//            params.topMargin,
-//            params.rightMargin,
-//            keyboardHeight-25 // bottom margin = keyboard height
-//        )
-        binding.scrollReferences.setPadding(
-            binding.scrollReferences.paddingLeft,
-            binding.scrollReferences.paddingTop,
-            binding.scrollReferences.paddingRight,
-            keyboardHeight
-        )
-    }
-
-    private fun onKeyboardHidden() {
-//        val params = binding.scrollReferences.layoutParams as ViewGroup.MarginLayoutParams
-//        params.setMargins(
-//            params.leftMargin,
-//            params.topMargin,
-//            params.rightMargin,
-//            0 // reset bottom margin
-//        )
-//        binding.scrollReferences.layoutParams = params
-//        binding.scrollReferences.setPadding(
-//            binding.scrollReferences.paddingLeft,
-//            binding.scrollReferences.paddingTop,
-//            binding.scrollReferences.paddingRight,
-//            0
-//        )
-    }
-
-    private fun initListner() {
-        clickListener()
-        adapterListener()
-        populateData()
         binding.previewCv.isVisible = checkProfileCase(sharedViewModel)
     }
 
-    private fun populateData() {
-        if (sharedViewModel.cvModel.references.isNotEmpty()) {
-            adapter.submitList(sharedViewModel.cvModel.references)
-        } else {
-            sharedViewModel.cvModel.apply {
-                this?.references?.add(Reference())
-            }
-            adapter.submitList(sharedViewModel.cvModel.references)
+    override fun onDestroyView() {
+        super.onDestroyView()
+        onBackPressedCallback?.remove()
+        onBackPressedCallback = null
+    }
 
+    /* ---------------- Back press ---------------- */
+
+    private fun configureBackPress() {
+        onBackPressedCallback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() = backPressed()
+        }
+        onBackPressedCallback?.let {
+            requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, it)
         }
     }
 
-    private fun adapterListener() {
-        context?.let { ctx ->
-            binding.referencesRecyclerView.layoutManager = LinearLayoutManager(ctx)
-            binding.referencesRecyclerView.itemAnimator = null
-            binding.referencesRecyclerView.setHasFixedSize(true)
-            adapter = ReferencesAdapter()
-            binding.referencesRecyclerView.adapter = adapter
-            adapter.setOnEditTextCompleteListener(object :
-                ReferencesAdapter.OnEditTextCompleteListener {
-                override fun onReferenceNameTextChange(position: Int, text: String) {
-                    // Update the sharedViewModel data directly
-
-
-                    if (position in 0 until sharedViewModel.cvModel.references.size) {
-
-                        sharedViewModel.cvModel.apply {
-                            this?.references?.get(position)?.name = text
-
-                        }
-
-                    }
-                }
-
-                override fun onJobTitleTextChange(position: Int, text: String) {
-                    // Update the sharedViewModel data directly
-
-
-                    if (position in 0 until sharedViewModel.cvModel.references.size) {
-
-                        sharedViewModel.cvModel.apply {
-                            this?.references?.get(position)?.designation = text
-
-                        }
-
-                    }
-                }
-
-                override fun onCompanyNameTextChange(position: Int, text: String) {
-                    // Update the sharedViewModel data directly
-
-                    if (position in 0 until sharedViewModel.cvModel.references.size) {
-
-                        sharedViewModel.cvModel.apply {
-                            this?.references?.get(position)?.company_name = text
-
-                        }
-
-                    }
-                }
-
-//            override fun onEmailTextChange(position: Int, text: String) {
-//                // Update the sharedViewModel data directly
-//                if (position in 0 until sharedViewModel.cvModel.references.size) {
-//
-//
-//
-//                    sharedViewModel.cvModel.apply {
-//                        this?.references?.get(position)?.email = text
-//
-//                    }
-//
-//                }
-//            }
-
-                override fun onEmailTextChange(position: Int, text: String) {
-                    // Check if the email already exists in other references
-
-                    val isDuplicateEmail = sharedViewModel.cvModel.references
-                        .filterIndexed { index, _ -> index != position }
-                        .any { it.email == text }
-
-                    if (isDuplicateEmail) {
-                        ViewUtils.error = getString(R.string.dublicate_email_founded)
-                        // Show a toast message if the email is a duplicate
-                        showToastSafe(getString(R.string.dublicate_email_founded))
-                    } else {
-                        ViewUtils.error = ""
-                        // Update the sharedViewModel data if no duplicate email is found
-                        if (position in 0 until sharedViewModel.cvModel.references.size) {
-                            sharedViewModel.cvModel.apply {
-                                this.references[position].email = text
-                            }
-                        }
-                    }
-
-
-                }
-
-
-                override fun onPhoneTextChange(position: Int, text: String) {
-                    // Update the sharedViewModel data directly
-
-
-
-                    if (position in 0 until sharedViewModel.cvModel.references.size) {
-
-                        sharedViewModel.cvModel.apply {
-                            references?.get(position)?.phone = text
-                        }
-                    }
-                }
-                override fun requestFocus(editText: EditText) {
-                    editText.requestFocus()
-                }
-
-                override fun onRemoveItem(position: Int, itemRemoved: () -> Unit) {
-                    showRemoveItemBottomSheet(position){
-                        itemRemoved.invoke()
-                    }
-                }
-
-            })
-        }
-
-    }
-    private fun showRemoveItemBottomSheet(position: Int, itemRemoved: (Boolean) -> Unit) {
-        val removeItemBottomSheet = RemoveItemBottomSheet {
-            itemRemoved.invoke(true)
-            removeItemFromList(position)
-        }
-        removeItemBottomSheet.show(parentFragmentManager, "RemoveItemBottomSheet")
+    private fun backPressed() {
+        findNavController().popBackStack()
     }
 
-    private fun removeItemFromList(position: Int) {
-        try {
-            if (position >= 0 && position < sharedViewModel.cvModel.references.size) {
-                // Create a new copy (so DiffUtil sees a new list instance)
-                val updatedList = sharedViewModel.cvModel.references.toMutableList()
-                updatedList.removeAt(position)
-                sharedViewModel.cvModel.references = updatedList
-                if (updatedList.isEmpty()) {
-                    findNavController().popBackStack()
-                    return
-                }
-                Log.i("currentList", "removeItemFromList:${updatedList.size} ")
-                // Update ViewModel and Adapter with a *new* list reference
-                binding.scrollReferences.isEnabled = false
-                binding.scrollReferences.clearFocus()
+    /* ---------------- Keyboard padding ---------------- */
 
-                adapter?.submitList(updatedList.toList())
-
-// Re-enable scrolling after a frame
-                binding.scrollReferences.post {
-                    binding.scrollReferences.isEnabled = true
-                }
-
-                // ensure a new instance each time
-            }
-        } catch (ex: Exception) {
-            ex.printStackTrace()
-        }
-    }
-
-    private fun clickListener() {
-
-        binding.backButton.setOnClickListener {
-            backPressed()
-        }
-        binding.previewCv.setOnClickListener {
-//            previewCv( sharedViewModel, R.id.fragmentPreviewApi)
-        }
-        binding.addMoreReferences.setOnClickListener {
-
-            addNewEducationItem()
-        }
-        binding.expnextbtn.setOnClickListener {
-
-            val arePhoneEmailItemsNotEmpty =
-                sharedViewModel.cvModel.references.all {
-                    it.email.isNotEmpty() &&
-                            it.phone.isNotEmpty()
-                }
-            if (arePhoneEmailItemsNotEmpty) {
-                activity?.let {
-                    if (it is MainActivity) {
-//                        InterstitialHelper.showAndLoadInterstitial(
-//                            it,
-//                            RemoteConfig.CREATE_AI_CV_INTERSTITIAL_ID
-//                        ) {
-//
-//                            findNavController().navigate(R.id.customHomeFragment)
-//
-//                        }
-                    }
-                }
-
+    private fun setupKeyboardPadding(root: View) {
+        root.viewTreeObserver.addOnGlobalLayoutListener {
+            val rect = Rect()
+            root.getWindowVisibleDisplayFrame(rect)
+            val screenHeight = root.rootView.height
+            val keypadHeight = screenHeight - rect.bottom
+            if (keypadHeight > screenHeight * 0.15) {
+                binding.scrollReferences.setPadding(
+                    binding.scrollReferences.paddingLeft,
+                    binding.scrollReferences.paddingTop,
+                    binding.scrollReferences.paddingRight,
+                    keypadHeight
+                )
             } else {
-                showToastSafe("please enter at least phone and email")
+                // no-op: keep default padding
+            }
+        }
+    }
+
+    /* ---------------- Data helpers ---------------- */
+
+    private fun ensureListHasAtLeastOne() {
+        val list = sharedViewModel.cvModelRequestDb.referenceList
+        if (list.isEmpty()) list.add(ReferenceModel())
+        // If we navigated back from somewhere and index > last, fix it.
+        if (currentIndex !in list.indices) currentIndex = list.lastIndex
+    }
+
+    private fun currentItem(): ReferenceModel =
+        sharedViewModel.cvModelRequestDb.referenceList[currentIndex]
+
+    private fun bindCurrentItemToViews() = with(binding) {
+        val item = currentItem()
+        etRefName.setText(item.name.orEmpty())
+        etRefPhone.setText(item.phone.orEmpty())
+        etRefEmail.setText(item.email.orEmpty())
+        etRefDesignation.setText(item.designation.orEmpty())
+        etRefCompany.setText(item.companyName.orEmpty())
+        // Clear inline errors
+
+        // Focus name if empty
+        if (item.name.isNullOrEmpty()) etRefName.requestFocus()
+    }
+
+    /** As-you-type, write back to the model */
+    private fun attachLiveFieldWriters() = with(binding) {
+        ViewUtils.applyCapitalizeFilter(etRefName)
+        ViewUtils.applyCapitalizeFilter(etRefDesignation)
+        ViewUtils.applyCapitalizeFilter(etRefCompany)
+
+        etRefName.addTextChangedListener {
+            currentItem().name = it?.toString()?.takeIf { s -> s.isNotBlank() }
+        }
+
+        etRefDesignation.addTextChangedListener {
+            currentItem().designation = it?.toString()?.takeIf { s -> s.isNotBlank() }
+        }
+
+        etRefCompany.addTextChangedListener {
+            currentItem().companyName = it?.toString()?.takeIf { s -> s.isNotBlank() }
+        }
+
+        etRefEmail.addTextChangedListener { s ->
+            val text = s?.toString()?.trim().orEmpty()
+            currentItem().email = text.ifBlank { null }
+
+            // simple inline validation + length cap 34 like your adapter
+            if (text.isEmpty()) {
+//                emailErrorText.text = null
+            } else {
+                val trimmed = text.substring(0, 34)
+                etRefEmail.setText(trimmed)
+                etRefEmail.setSelection(trimmed.length)
+                currentItem().email = trimmed
+            }
+        }
+
+        etRefPhone.addTextChangedListener { s ->
+            val text = s?.toString()?.trim().orEmpty()
+            currentItem().phone = text.ifBlank { null }
+
+            if (text.isEmpty()) {
+//                do nothing
+            } else if (text.length > 14) {
+                val trimmed = text.substring(0, 14)
+                etRefPhone.setText(trimmed)
+                etRefPhone.setSelection(trimmed.length)
+                currentItem().phone = trimmed
+            }
+        }
+    }
+
+    /* ---------------- Clicks ---------------- */
+
+    private fun setupClicks() = with(binding) {
+        backButton.setOnClickListener { backPressed() }
+
+        // Preview optional:
+        // previewCv.setOnClickListener { previewCv(sharedViewModel, R.id.fragmentPreviewApi) }
+
+        addMoreReferences.setOnClickListener {
+            // 1) Validate current before moving on
+            if (!validateCurrent()) return@setOnClickListener
+            // 2) "Close" previous (we already bound it to list)
+            // 3) Add new item, move index, bind fresh UI
+            val list = sharedViewModel.cvModelRequestDb.referenceList
+            list.add(ReferenceModel())
+            currentIndex = list.lastIndex
+            bindCurrentItemToViews()
+        }
+
+        binding.btnSave.setOnClickListener {
+            // Save = validate all
+            if (!validateAll()) return@setOnClickListener
+            // Everything is already in ViewModel list; navigate or show success
+            showToastSafe(getString(R.string.saved_successfully))
+            // Navigate if needed:
+            // findNavController().navigate(R.id.customHomeFragment)
+        }
+    }
+
+    /* ---------------- Validation ---------------- */
+
+    private fun validateCurrent(): Boolean {
+        val item = currentItem()
+
+        // Email + phone required
+        val email = item.email?.trim().orEmpty()
+        val phone = item.phone?.trim().orEmpty()
+
+        // inline errors
+        if (email.isEmpty()) {
+            binding.etRefEmail.requestFocus()
+            return false
+        }
+        if (!email.matches(ViewUtils.emailPattern.toRegex())) {
+            binding.etRefEmail.requestFocus()
+            return false
+        }
+        if (phone.isEmpty()) {
+            binding.etRefPhone.requestFocus()
+            return false
+        }
+        val phoneOk = "^[+]?[0-9]{1,14}$".toRegex().matches(phone)
+        if (!phoneOk) {
+            binding.etRefPhone.requestFocus()
+            return false
+        }
+
+        // Duplicate email across list (excluding current index)
+        if (isDuplicateEmail(email, excludeIndex = currentIndex)) {
+            showToastSafe(getString(R.string.dublicate_email_founded))
+            return false
+        }
+        // passed
+
+        return true
+    }
+
+    private fun validateAll(): Boolean {
+        val list = sharedViewModel.cvModelRequestDb.referenceList
+
+        // At least one
+        if (list.isEmpty()) {
+            return false
+        }
+
+        // Email + phone with simple validation on each
+        list.forEachIndexed { index, ref ->
+            val email = ref.email?.trim().orEmpty()
+            val phone = ref.phone?.trim().orEmpty()
+
+            if (email.isEmpty() || !email.matches(ViewUtils.emailPattern.toRegex())) {
+                currentIndex = index
+                bindCurrentItemToViews()
+
+                binding.etRefEmail.requestFocus()
+                return false
+            }
+            if (phone.isEmpty() || !"^[+]?[0-9]{1,14}$".toRegex().matches(phone)) {
+                currentIndex = index
+                bindCurrentItemToViews()
+
+                binding.etRefPhone.requestFocus()
+                return false
+            }
+        }
+
+        // Duplicate emails across all
+        val emails = list.mapNotNull { it.email?.trim()?.lowercase() }.filter { it.isNotEmpty() }
+        if (emails.size != emails.toSet().size) {
+            showToastSafe(getString(R.string.dublicate_email_founded))
+            return false
+        }
+
+        return true
+    }
+
+    private fun isDuplicateEmail(email: String, excludeIndex: Int): Boolean {
+        val list = sharedViewModel.cvModelRequestDb.referenceList
+        val lower = email.lowercase()
+        list.forEachIndexed { idx, ref ->
+            if (idx != excludeIndex && ref.email?.lowercase() == lower) return true
+        }
+        return false
+    }
+
+    /* ---------------- Optional list (kept wired for later) ---------------- */
+
+    private fun setupOptionalRecycler() = with(binding) {
+        // If/when you decide to show the list; currently RecyclerView is GONE in XML
+        referencesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+        adapter = ReferencesAdapter()
+        referencesRecyclerView.adapter = adapter
+
+        // Seed adapter (in case you toggle visibility later)
+        adapter.submitList(sharedViewModel.cvModelRequestDb.referenceList.toList())
+
+        adapter.setOnEditTextCompleteListener(object :
+            ReferencesAdapter.OnEditTextCompleteListener {
+            override fun onReferenceNameTextChange(position: Int, text: String) {
+                if (position in sharedViewModel.cvModelRequestDb.referenceList.indices) {
+                    sharedViewModel.cvModelRequestDb.referenceList[position].name =
+                        text.ifBlank { null }
+                }
             }
 
-        }
+            override fun onJobTitleTextChange(position: Int, text: String) {
+                if (position in sharedViewModel.cvModelRequestDb.referenceList.indices) {
+                    sharedViewModel.cvModelRequestDb.referenceList[position].designation =
+                        text.ifBlank { null }
+                }
+            }
 
+            override fun onCompanyNameTextChange(position: Int, text: String) {
+                if (position in sharedViewModel.cvModelRequestDb.referenceList.indices) {
+                    sharedViewModel.cvModelRequestDb.referenceList[position].companyName =
+                        text.ifBlank { null }
+                }
+            }
+
+            override fun onEmailTextChange(position: Int, text: String) {
+                if (position in sharedViewModel.cvModelRequestDb.referenceList.indices) {
+                    // prevent duplicates here too
+                    val dup = sharedViewModel.cvModelRequestDb.referenceList
+                        .mapIndexed { i, r -> i to (r.email?.trim().orEmpty()) }
+                        .any { (i, e) -> i != position && e.equals(text, true) && e.isNotEmpty() }
+                    ViewUtils.error = if (dup) getString(R.string.dublicate_email_founded) else ""
+                    if (!dup) {
+                        sharedViewModel.cvModelRequestDb.referenceList[position].email =
+                            text.ifBlank { null }
+                    }
+                }
+            }
+
+            override fun onPhoneTextChange(position: Int, text: String) {
+                if (position in sharedViewModel.cvModelRequestDb.referenceList.indices) {
+                    sharedViewModel.cvModelRequestDb.referenceList[position].phone =
+                        text.ifBlank { null }
+                }
+            }
+
+            override fun requestFocus(editText: EditText) {
+                editText.requestFocus()
+            }
+
+            override fun onRemoveItem(position: Int, itemRemoved: () -> Unit) {
+                // Optional remove handler if you unhide the list UI
+                if (position in sharedViewModel.cvModelRequestDb.referenceList.indices) {
+                    sharedViewModel.cvModelRequestDb.referenceList.removeAt(position)
+                    adapter.submitList(sharedViewModel.cvModelRequestDb.referenceList.toList())
+                    itemRemoved.invoke()
+                    // If currentIndex is now out-of-range, pull it back
+                    if (currentIndex !in sharedViewModel.cvModelRequestDb.referenceList.indices) {
+                        currentIndex =
+                            (sharedViewModel.cvModelRequestDb.referenceList.lastIndex).coerceAtLeast(0)
+                        ensureListHasAtLeastOne()
+                        bindCurrentItemToViews()
+                    }
+                }
+            }
+        })
     }
-
-    private fun validateAndAddNewReference() {
-
-        val hasDuplicateEmails = hasDuplicateEmailsInReferences()
-        if (!hasDuplicateEmails) {
-            addNewReferenceItemToList()
-        } else {
-            showToastSafe("Duplicate email found in references")
-        }
-
-    }
-
-    private fun hasDuplicateEmailsInReferences(): Boolean {
-        val emailSet = sharedViewModel.cvModel.references.map { it.email }.toSet()
-        return emailSet.size != sharedViewModel.cvModel.references.size
-    }
-
-    private fun addNewReferenceItemToList() {
-        sharedViewModel.cvModel.apply {
-            this.references.add(Reference())
-        }
-        adapter.submitList(sharedViewModel.cvModel.references)
-        binding.referencesRecyclerView.scrollToPosition(sharedViewModel.cvModel.references.size - 1)
-    }
-
-    private fun addNewEducationItem() {
-        validateAndAddNewReference()
-    }
-
 }

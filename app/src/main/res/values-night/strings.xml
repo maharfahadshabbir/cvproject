@@ -81,4 +81,6 @@
     <string name="skill_level">Skill Level</string>
     <string name="dublicate_email_founded">Dublicate email founded</string>
     <string name="project_title">Project Title</string>
+    <string name="saved">Saved</string>
+    <string name="saved_successfully">Saved Successfuly</string>
 </resources>

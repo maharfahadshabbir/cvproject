@@ -1,22 +1,214 @@
 package com.example.cvmaker.fragments.profiledetail
 
+import android.graphics.Rect
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.example.cvmaker.R
-
+import android.widget.EditText
+import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
+import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
+import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.cvmaker.databinding.FragmentLanguageDetailsBinding
+import com.example.cvmaker.fragments.profiledetail.adapters.LanguageAdapter
+import com.example.cvmaker.fragments.profiledetail.util.ViewUtils.checkProfileCase
+import com.example.cvmaker.fragments.profiledetail.util.bottomsheets.RemoveItemBottomSheet
+import com.example.cvmaker.model.workingmodels.LanguageModel
+import com.example.cvmaker.utils.getViewLifecycleOwnerOrNull
+import com.example.cvmaker.utils.showToastSafe
+import com.example.cvmaker.utils.tryCatch
+import com.example.cvmaker.viewmodels.SharedViewModel
 
 class LanguageDetailsFragment : Fragment() {
 
+    // nullable binding pattern
+    private var _binding: FragmentLanguageDetailsBinding? = null
+    private val binding get() = _binding!!
+
+    private val sharedViewModel by activityViewModels<SharedViewModel>()
+
+    private var adapter: LanguageAdapter? = null
+    private var onBackPressedCallback: OnBackPressedCallback? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_language_details, container, false)
+    ): View {
+        _binding = FragmentLanguageDetailsBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        configureBackPress()
+        setupRecycler()
+        populateData()
+        setupClicks()
+        handleKeyboard(view)
+
+        binding.previewCv.isVisible = checkProfileCase(sharedViewModel)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        onBackPressedCallback?.remove()
+        onBackPressedCallback = null
+        adapter = null
+        _binding = null
+    }
+
+    private fun configureBackPress() {
+        tryCatch {
+            onBackPressedCallback = object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    findNavController().popBackStack()
+                }
+            }
+            onBackPressedCallback?.let { cb ->
+                getViewLifecycleOwnerOrNull()?.let { owner ->
+                    activity?.onBackPressedDispatcher?.addCallback(owner, cb)
+                }
+            }
+        }
+    }
+
+    private fun setupRecycler() {
+        adapter = LanguageAdapter()
+        binding.languageRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+        binding.languageRecyclerView.adapter = adapter
+
+        adapter?.setListener(object : LanguageAdapter.Listener {
+            override fun onLanguageTextChange(position: Int, text: String) {
+                val list = sharedViewModel.cvModelRequestDb.languageList
+                if (position in list.indices) {
+                    list[position].languageName = text
+                }
+            }
+
+            override fun onLevelChanged(position: Int, level: String) {
+                val list = sharedViewModel.cvModelRequestDb.languageList
+                if (position in list.indices) {
+                    list[position].level = level
+                }
+            }
+
+            override fun onRemove(position: Int) {
+                showRemoveItemBottomSheet(position)
+            }
+
+            override fun requestFocusForNewItem(editText: EditText) {
+                editText.requestFocus()
+            }
+
+            override fun collapseAllExcept(position: Int) {
+                if (position == -1) {
+                    // collapse all
+                    adapter?.expandOnly(-1)
+                    return
+                }
+                adapter?.expandOnly(position)
+            }
+        })
+    }
+
+    private fun populateData() {
+        val list = sharedViewModel.cvModelRequestDb.languageList
+        if (list.isEmpty()) {
+            list.add(LanguageModel(languageName = "", level = "Novice"))
+        }
+        // Expand the last item by default
+        adapter?.submitList(list.toList())
+        adapter?.expandOnly(list.lastIndex)
+    }
+
+    private fun setupClicks() {
+        binding.backButton.setOnClickListener { findNavController().popBackStack() }
+
+        binding.addMoreLanguage.setOnClickListener {
+            val list = sharedViewModel.cvModelRequestDb.languageList
+
+            // Allow add only if all existing rows have a name + level
+            val allFilled = list.all { !(it.languageName.isNullOrBlank()) && !(it.level.isNullOrBlank()) }
+            if (!allFilled) {
+                Toast.makeText(requireContext(), "Please fill the current language first", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Add new + accordion behavior: collapse previous, open new
+            list.add(LanguageModel(languageName = "", level = "Novice"))
+            adapter?.submitList(list.toList())
+            val newIndex = list.lastIndex
+            binding.languageRecyclerView.scrollToPosition(newIndex)
+            adapter?.expandOnly(newIndex)
+        }
+
+        binding.btnSave.setOnClickListener {
+            val list = sharedViewModel.cvModelRequestDb.languageList
+
+            val cleaned = list
+                .filter { !it.languageName.isNullOrBlank() }
+                .map { it.copy(languageName = it.languageName!!.trim(), level = (it.level ?: "Novice")) }
+                .toMutableList()
+
+            if (cleaned.isEmpty()) {
+                Toast.makeText(requireContext(), "Please add at least one language", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Persist to in-memory DB
+            sharedViewModel.cvModelRequestDb.languageList = cleaned
+            showToastSafe("Languages saved successfully!")
+            findNavController().popBackStack()
+        }
+    }
+
+    private fun showRemoveItemBottomSheet(position: Int) {
+        val remove = RemoveItemBottomSheet {
+            removeItem(position)
+        }
+        remove.show(parentFragmentManager, "RemoveLanguageBottomSheet")
+    }
+
+    private fun removeItem(position: Int) {
+        try {
+            val list = sharedViewModel.cvModelRequestDb.languageList
+            if (position in list.indices) {
+                val updated = list.toMutableList()
+                updated.removeAt(position)
+
+                if (updated.isEmpty()) {
+                    // If user removed the last one, keep a blank row to edit
+                    updated.add(LanguageModel(languageName = "", level = "Novice"))
+                }
+
+                sharedViewModel.cvModelRequestDb.languageList = updated
+                adapter?.submitList(updated.toList())
+
+                // Keep accordion tidy: expand last row after removal
+                adapter?.expandOnly(updated.lastIndex)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun handleKeyboard(root: View) {
+        root.viewTreeObserver.addOnGlobalLayoutListener {
+            val r = Rect()
+            root.getWindowVisibleDisplayFrame(r)
+            val screenHeight = root.rootView.height
+            val keypadHeight = screenHeight - r.bottom
+
+            binding.scrollLanguages.setPadding(
+                binding.scrollLanguages.paddingLeft,
+                binding.scrollLanguages.paddingTop,
+                binding.scrollLanguages.paddingRight,
+                if (keypadHeight > screenHeight * 0.15) keypadHeight else 0
+            )
+        }
+    }
 }

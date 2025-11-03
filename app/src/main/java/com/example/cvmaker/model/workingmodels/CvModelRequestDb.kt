@@ -3,7 +3,7 @@ package com.example.cvmaker.model.workingmodels
 
 data class CvModelRequestDb(
     var personalDetails: PersonalDetailModel? = null,
-    var educationList: MutableList<Education> = mutableListOf()/*,
+    var educationList: MutableList<EducationModel> = mutableListOf(),
     var experienceList: MutableList<ExperienceModel> = mutableListOf(),
     var skillsList: MutableList<SkillsModel> = mutableListOf(),
     var projectList: MutableList<ProjectModel> = mutableListOf(),
@@ -13,5 +13,7 @@ data class CvModelRequestDb(
     var certificationList: MutableList<CertificationModel> = mutableListOf(),
     var achievementList: MutableList<AchievementModel> = mutableListOf(),
     var interestList: MutableList<InterestModel> = mutableListOf(),
-    var portfolioList: MutableList<PortfolioModel> = mutableListOf()*/
+//    var portfolio: PortfolioModel? = null,
+
+    var portfolioList: MutableList<PortfolioModel> = mutableListOf()
 )

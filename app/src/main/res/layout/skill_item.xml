@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -8,62 +9,60 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- Header (collapsed row) -->
         <TextView
             android:id="@+id/company"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/_10sdp"
             android:layout_marginStart="@dimen/_12sdp"
             android:layout_marginTop="@dimen/_12sdp"
+            android:layout_marginEnd="@dimen/_10sdp"
             android:drawablePadding="@dimen/_10sdp"
             android:fontFamily="@font/poppins_regular"
             android:gravity="start|center_vertical"
             android:text="@string/skill_name"
             android:textColor="@color/black"
             android:textSize="@dimen/_13sdp"
-            app:drawableStartCompat="@drawable/ic_skills"
-            app:layout_constraintEnd_toStartOf="@id/skilldetailicn"
+            android:translationZ="@dimen/_90sdp"
+            app:drawableStartCompat="@drawable/skill_icon"
+            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
+            app:layout_constraintEnd_toStartOf="@+id/removeItem" />
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/removeItem"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/_3sdp"
-            android:layout_marginEnd="@dimen/_12sdp"
+            android:layout_marginEnd="@dimen/_6sdp"
             android:background="@drawable/remove"
-            app:layout_constraintBottom_toBottomOf="@id/skilldetailicn"
-            app:layout_constraintEnd_toStartOf="@id/skilldetailicn"
-            app:layout_constraintTop_toTopOf="@id/skilldetailicn" />
+            app:layout_constraintTop_toTopOf="@id/company"
+            app:layout_constraintBottom_toBottomOf="@id/company"
+            app:layout_constraintEnd_toStartOf="@+id/skilldetailicn" />
 
-        <androidx.appcompat.widget.AppCompatImageView
+        <ImageView
             android:id="@+id/skilldetailicn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/_3sdp"
             android:layout_marginEnd="@dimen/_12sdp"
             android:background="@drawable/collapsse"
+            app:layout_constraintTop_toTopOf="@id/company"
             app:layout_constraintBottom_toBottomOf="@id/company"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/company"
-            app:layout_constraintTop_toTopOf="@id/company" />
+            app:layout_constraintEnd_toEndOf="parent" />
 
+        <!-- Editor (expanded row) -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/data_constraint"
             android:layout_width="match_parent"
-            android:layout_marginTop="@dimen/_10sdp"
             android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="@dimen/_10sdp"
+            android:paddingBottom="@dimen/_6sdp"
+            app:layout_constraintTop_toBottomOf="@id/company"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/company">
+            app:layout_constraintEnd_toEndOf="parent">
 
             <EditText
                 android:id="@+id/skill_edittext"
@@ -75,52 +74,46 @@
                 android:fontFamily="@font/poppins_regular"
                 android:gravity="start|center_vertical"
                 android:hint="Leadership"
-                android:paddingVertical="@dimen/_10sdp"
                 android:paddingStart="@dimen/_15sdp"
+                android:paddingVertical="@dimen/_10sdp"
                 android:textColor="@color/textColor"
                 android:textColorHint="@color/gray_tx_color"
                 android:textSize="@dimen/_12sdp"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent" />
-
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
 
             <TextView
                 android:id="@+id/designation"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/_10sdp"
                 android:layout_marginStart="@dimen/_12sdp"
                 android:layout_marginTop="@dimen/_12sdp"
+                android:layout_marginEnd="@dimen/_12sdp"
                 android:drawableStart="@drawable/level_icon"
                 android:drawablePadding="@dimen/_12sdp"
                 android:fontFamily="@font/poppins_regular"
-                android:gravity="start|center_vertical"
                 android:text="@string/skill_level"
                 android:textColor="@color/black"
                 android:textSize="@dimen/_13sdp"
-                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/skill_edittext"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/skill_edittext" />
+                app:layout_constraintEnd_toEndOf="parent"
+                 />
 
-
+            <!-- SIMPLE, default RatingBar (no custom style) -->
             <RatingBar
                 android:id="@+id/rating_bar"
-                style="@style/CustomRatingBarStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginVertical="@dimen/_10sdp"
+                android:layout_marginTop="@dimen/_6sdp"
                 android:numStars="5"
-                android:rating="3"
-                app:layout_constraintEnd_toEndOf="parent"
+                android:stepSize="3"
+                android:isIndicator="false"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/designation" />
-
-
+                app:layout_constraintTop_toBottomOf="@id/designation"
+                app:layout_constraintEnd_toEndOf="parent" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
-
-
 </androidx.constraintlayout.widget.ConstraintLayout>
-
-

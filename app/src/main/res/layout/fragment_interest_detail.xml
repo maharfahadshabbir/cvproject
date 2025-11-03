@@ -106,6 +106,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/_12sdp"
                 android:padding="@dimen/_12sdp"
+                android:visibility="gone"
                 app:layout_constraintTop_toTopOf="parent">
 
                 <TextView
@@ -139,14 +140,14 @@
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/interest_recycler_view"
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:visibility="gone"
+                android:layout_height="wrap_content"
+                android:visibility="visible"
                 app:layout_constraintBottom_toTopOf="@id/addMoreInterest"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                tools:itemCount="2"
-                tools:listitem="@layout/interest_row_item" />
+                tools:itemCount="1"
+                tools:listitem="@layout/interest_item" />
 
             <!-- Add more row -->
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -156,7 +157,7 @@
                 android:layout_marginTop="@dimen/_16sdp"
                 android:layout_marginHorizontal="16dp"
                 android:background="@drawable/addmore_bg"
-                app:layout_constraintTop_toBottomOf="@id/interest_container"
+                app:layout_constraintTop_toBottomOf="@id/interest_recycler_view"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
 

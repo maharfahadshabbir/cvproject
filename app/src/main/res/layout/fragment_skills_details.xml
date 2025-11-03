@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/skillsRoot"
@@ -15,6 +16,7 @@
         android:background="@color/white"
         android:paddingHorizontal="@dimen/_10sdp"
         android:paddingVertical="@dimen/_6sdp"
+        android:elevation="4dp"
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
@@ -25,23 +27,24 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:padding="@dimen/_5sdp"
             android:src="@drawable/arrow_back"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
 
         <TextView
             android:id="@+id/toolbarTitle"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/_6sdp"
+            android:layout_marginStart="@dimen/_6sdp"
             android:fontFamily="@font/poppins_regular"
             android:text="@string/skills"
             android:textColor="@color/black"
             android:textSize="@dimen/_14sdp"
             android:textStyle="bold"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toEndOf="@id/backButton"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintEnd_toStartOf="@id/preview"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/preview"
@@ -50,9 +53,9 @@
             android:layout_marginHorizontal="@dimen/_10sdp"
             android:background="@drawable/preview_bg"
             android:padding="@dimen/_3sdp"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
 
             <ImageView
                 android:id="@+id/preview_cv"
@@ -61,10 +64,10 @@
                 android:layout_marginHorizontal="@dimen/_8sdp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/preview_icon"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/expnextbtn"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintEnd_toStartOf="@id/expnextbtn"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
 
             <TextView
                 android:id="@+id/expnextbtn"
@@ -76,112 +79,49 @@
                 android:textAllCaps="false"
                 android:textColor="@color/white"
                 android:textSize="@dimen/_12sdp"
-                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/preview_cv"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Scrollable content between Toolbar and Save -->
+    <!-- Scrollable content -->
     <ScrollView
         android:id="@+id/scrollSkills"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:clipToPadding="false"
-        android:paddingHorizontal="@dimen/_12sdp"
-        android:paddingBottom="@dimen/_10sdp"
-        app:layout_constraintBottom_toTopOf="@id/btn_save"
-        app:layout_constraintTop_toBottomOf="@id/toolbar">
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
+        app:layout_constraintBottom_toTopOf="@id/btn_save">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/skillsListContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <!-- One Skill block (duplicate on Add more) -->
+            <!-- Legacy single-item block hidden -->
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/skill_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/_12sdp"
                 android:padding="@dimen/_12sdp"
-                app:layout_constraintTop_toTopOf="parent">
-
-                <!-- Skill Name -->
-                <TextView
-                    android:id="@+id/tvSkillName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:drawableStart="@drawable/institute_icon"
-                    android:drawablePadding="@dimen/_10sdp"
-                    android:fontFamily="@font/poppins_regular"
-                    android:text="Skill Name"
-                    android:textColor="@color/textColor"
-                    android:textSize="12sp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <EditText
-                    android:id="@+id/etSkillName"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/_8sdp"
-                    android:background="@drawable/ic_bg_pro"
-                    android:hint="Leadership"
-                    android:paddingHorizontal="@dimen/_10sdp"
-                    android:paddingVertical="@dimen/_10sdp"
-                    android:textColor="@color/textColor"
-                    android:textColorHint="@color/gray_tx_color"
-                    android:textSize="@dimen/_12sdp"
-                    app:layout_constraintTop_toBottomOf="@id/tvSkillName" />
-
-                <!-- Skill Level -->
-                <TextView
-                    android:id="@+id/tvSkillLevel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/_12sdp"
-                    android:drawableStart="@drawable/scale_level_icon"
-                    android:drawablePadding="@dimen/_10sdp"
-                    android:fontFamily="@font/poppins_regular"
-                    android:text="Skill Level"
-                    android:textColor="@color/textColor"
-                    android:textSize="12sp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/etSkillName" />
-
-                <!-- 5-star Rating -->
-                <RatingBar
-                    android:id="@+id/rbSkillLevel"
-                    style="?android:attr/ratingBarStyleSmall"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/_8sdp"
-                    android:isIndicator="false"
-                    android:numStars="5"
-                    android:rating="3"
-                    android:splitTrack="false"
-                    android:stepSize="1"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tvSkillLevel" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
+                android:visibility="gone"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/skill_recycler_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/_12sdp"
+                android:layout_marginTop="@dimen/_18sdp"
                 android:layout_marginBottom="@dimen/_6sdp"
-                android:visibility="gone"
+                app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toTopOf="@id/addMoreSkill"
                 tools:listitem="@layout/skill_item"
                 tools:itemCount="1" />
-            <!-- Add more -->
+
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/addMoreSkill"
                 android:layout_width="match_parent"
@@ -189,20 +129,22 @@
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginTop="@dimen/_16sdp"
                 android:background="@drawable/addmore_bg"
-                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/skill_recycler_view"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/skill_container">
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent">
 
                 <ImageView
                     android:id="@+id/ivAddMoreSkill"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="@dimen/_8sdp"
+                    android:layout_marginStart="@dimen/_12sdp"
                     android:src="@drawable/filled_addition_icon"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toStartOf="@id/tvAddMoreSkill"
+                    app:layout_constraintHorizontal_chainStyle="packed"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    app:layout_constraintEnd_toStartOf="@+id/tvAddMoreSkill"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent" />
 
                 <TextView
                     android:id="@+id/tvAddMoreSkill"
@@ -213,15 +155,17 @@
                     android:textAllCaps="false"
                     android:textColor="@color/blue"
                     android:textSize="14sp"
-                    app:layout_constraintBottom_toBottomOf="parent"
+                    android:gravity="center"
+                    android:layout_marginHorizontal="@dimen/_8sdp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/ivAddMoreSkill"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
-    <!-- Save button fixed to bottom -->
+    <!-- Save button -->
     <TextView
         android:id="@+id/btn_save"
         android:layout_width="match_parent"
@@ -237,7 +181,7 @@
         android:textColor="@color/white"
         android:textSize="14sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

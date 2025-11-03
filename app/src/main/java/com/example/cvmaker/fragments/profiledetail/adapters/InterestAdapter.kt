@@ -13,17 +13,13 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.cvmaker.databinding.InterestItemBinding
 import com.example.cvmaker.fragments.profiledetail.util.ViewUtils
-import com.example.cvmaker.model.profilemodels.Interest
+import com.example.cvmaker.model.workingmodels.InterestModel
 import com.example.cvmaker.viewmodels.SharedViewModel
 
-class InterestAdapter() :
-    ListAdapter<Interest, InterestAdapter.ViewHolder>(DiffCallback()) {
+class InterestAdapter : ListAdapter<InterestModel, InterestAdapter.ViewHolder>(DiffCallback()) {
 
-    lateinit var binding: InterestItemBinding
     private var onEditTextCompleteListener: OnEditTextCompleteListener? = null
-
     private lateinit var sharedViewModel: SharedViewModel
-
     private var lastAddedPosition = -1
 
     fun setSharedViewModel(viewModel: SharedViewModel) {
@@ -31,135 +27,85 @@ class InterestAdapter() :
     }
 
     interface OnEditTextCompleteListener {
-
         fun onInterestTextChange(position: Int, text: String)
-
         fun requestFocusForNewItem(editText: EditText)
-
         fun onRemoveItem(position: Int)
-
-
     }
 
     fun setOnEditTextCompleteListener(listener: OnEditTextCompleteListener) {
         onEditTextCompleteListener = listener
     }
 
-    override fun onCreateViewHolder(
-        parent: ViewGroup,
-        viewType: Int
-    ): InterestAdapter.ViewHolder {
-        binding = InterestItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val binding = InterestItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: InterestAdapter.ViewHolder, position: Int) {
-        val currentItem = getItem(position)
-        holder.bindTo(currentItem)
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        holder.bindTo(getItem(position))
     }
 
-    inner class ViewHolder(val binding: InterestItemBinding) :
+    inner class ViewHolder(private val binding: InterestItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
-        fun bindTo(currentItem: Interest) {
-
-            binding.interestEdittext.setText(currentItem?.name ?: "")
-
-
-
-
+        fun bindTo(currentItem: InterestModel) {
+            binding.interestEdittext.setText(currentItem.interestName ?: "")
 
             ViewUtils.applyCapitalizeFilter(binding.interestEdittext)
-
-
             ViewUtils.setupEditTextofAdaptors(
                 binding.interestEdittext,
                 InputType.TYPE_CLASS_TEXT,
                 KeyEvent.KEYCODE_ENTER
             )
 
-
-            binding.viewInstitutedetailicn.setOnClickListener {
-                //hide data
-                toggleVisibility()
-            }
+            binding.viewInstitutedetailicn.setOnClickListener { toggleVisibility() }
             binding.removeItem.setOnClickListener {
                 onEditTextCompleteListener?.onRemoveItem(adapterPosition)
             }
 
-
-            try {
-                if (currentItem.name.isEmpty()) {
-                    onEditTextCompleteListener?.requestFocusForNewItem(binding.interestEdittext)
-                }
-            } catch (e: Exception) {
-
+            if (currentItem.interestName.isNullOrEmpty()) {
+                onEditTextCompleteListener?.requestFocusForNewItem(binding.interestEdittext)
             }
 
-
-
-            //
             binding.interestEdittext.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(
-                    s: CharSequence?,
-                    start: Int,
-                    count: Int,
-                    after: Int
-                ) {
-                }
-
-                override fun onTextChanged(
-                    s: CharSequence?,
-                    start: Int,
-                    before: Int,
-                    count: Int
-                ) {
-                }
-
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
                 override fun afterTextChanged(s: Editable?) {
                     s?.let { newText ->
-                        onEditTextCompleteListener?.onInterestTextChange(
-                            adapterPosition,
-                            newText.toString()
-                        )
-                        if (newText.length <= 30) {
-                            if (!(ViewUtils.validateInput(newText.toString()))) {
-                                binding.interestEdittext.error = "Invalid input"
-                            } else {
-                                binding.interestEdittext.error = null
-                            }
-                        } else {
+                        val text = newText.toString()
+                        onEditTextCompleteListener?.onInterestTextChange(adapterPosition, text)
 
-                            // Trim the input to 30 characters
-                            val trimmedText = newText.substring(0, 30)
-                            binding.interestEdittext.setText(trimmedText)
-                            // Set the cursor to the end of the trimmed text
-                            binding.interestEdittext.setSelection(trimmedText.length)
-                            binding.interestEdittext.error =
-                                "Character limit exceeded (30 characters max)."
+                        if (text.length > 30) {
+                            val trimmed = text.substring(0, 30)
+                            binding.interestEdittext.setText(trimmed)
+                            binding.interestEdittext.setSelection(trimmed.length)
+                            binding.interestEdittext.error = "Max 30 characters allowed"
+                        } else if (!ViewUtils.validateInput(text)) {
+                            binding.interestEdittext.error = "Invalid input"
+                        } else {
+                            binding.interestEdittext.error = null
                         }
                     }
                 }
             })
-
         }
+
         private fun toggleVisibility() {
-            val isDataVisible = binding.dataConstraint.isVisible
-            binding.dataConstraint.isVisible = !isDataVisible
-            binding.interest.text = currentList[position].name.ifEmpty { "Interest" }
-            binding.viewInstitutedetailicn.rotation = if (isDataVisible) 180f else 0f
+            val visible = binding.dataConstraint.isVisible
+            binding.dataConstraint.isVisible = !visible
+            val title = currentList[adapterPosition].interestName
+            binding.interest.text = if (title.isNullOrBlank()) "Interest" else title
+            binding.viewInstitutedetailicn.rotation = if (visible) 180f else 0f
         }
     }
 
-    class DiffCallback : DiffUtil.ItemCallback<Interest>() {
-        override fun areItemsTheSame(oldItem: Interest, newItem: Interest) =
+    class DiffCallback : DiffUtil.ItemCallback<InterestModel>() {
+        override fun areItemsTheSame(oldItem: InterestModel, newItem: InterestModel) =
             oldItem.hashCode() == newItem.hashCode()
 
-        override fun areContentsTheSame(oldItem: Interest, newItem: Interest) =
+        override fun areContentsTheSame(oldItem: InterestModel, newItem: InterestModel) =
             oldItem == newItem
     }
-
-
 
     fun setLastAddedPosition(position: Int) {
         lastAddedPosition = position

@@ -115,7 +115,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                android:visibility="gone"
+                android:visibility="visible"
                 tools:itemCount="3"
                 tools:listitem="@layout/experience_row_item" />
 
@@ -124,6 +124,7 @@
                 android:id="@+id/experience_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:visibility="gone"
                 android:layout_marginTop="@dimen/_12sdp"
                 android:elevation="2dp"
                 android:padding="@dimen/_12sdp"
@@ -307,7 +308,8 @@
                 android:background="@drawable/addmore_bg"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/experience_container">
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/experience_recycler_view">
 
                 <ImageView
                     android:id="@+id/ivAddMoreExp"

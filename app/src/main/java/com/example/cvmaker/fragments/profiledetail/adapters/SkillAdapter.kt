@@ -14,164 +14,112 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.cvmaker.databinding.SkillItemBinding
 import com.example.cvmaker.fragments.profiledetail.util.ViewUtils.applyCapitalizeFilter
 import com.example.cvmaker.fragments.profiledetail.util.ViewUtils.setupEditTextofAdaptors
-import com.example.cvmaker.model.profilemodels.OtherSkill
-import com.example.cvmaker.utils.tryCatch
+import com.example.cvmaker.model.workingmodels.SkillsModel
 
-
-class SkillAdapter() : ListAdapter<OtherSkill, SkillAdapter.ViewHolder>(DiffCallback()) {
-
-    // Declare the binding property
-    private lateinit var binding: SkillItemBinding
-
-    private var onEditTextCompleteListener: OnEditTextCompleteListener? = null
+class SkillAdapter :
+    ListAdapter<SkillsModel, SkillAdapter.ViewHolder>(DiffCallback()) {
 
     interface OnEditTextCompleteListener {
         fun requestFocusForNewItem(editText: EditText)
         fun onSkillNameTextChange(position: Int, text: String)
-        fun onRatingChanged(position: Int, rating: Float)
-
+        fun onRatingChanged(position: Int, rating: Int)
         fun onItemRemoved(position: Int)
-
     }
 
+    private var onEditTextCompleteListener: OnEditTextCompleteListener? = null
+    private val expandedPositions = mutableSetOf<Int>() // only one open
 
     fun setOnEditTextCompleteListener(listener: OnEditTextCompleteListener) {
         onEditTextCompleteListener = listener
     }
 
+    fun expandOnly(position: Int) {
+        expandedPositions.clear()
+        if (position in 0 until itemCount) expandedPositions.add(position)
+        notifyDataSetChanged()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        binding = SkillItemBinding.inflate(
-            LayoutInflater.from(parent.context), parent, false
-        )
+        val binding = SkillItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val currentItem = getItem(position)
-        holder.bindTo(currentItem)
-
-
+        holder.bindTo(getItem(position), expandedPositions.contains(position))
     }
 
-    inner class ViewHolder(val binding: SkillItemBinding) :
+    inner class ViewHolder(private val binding: SkillItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
-        fun bindTo(currentItem: OtherSkill) {
-            binding.apply {
-                skillEdittext.setText(currentItem.name)
-                skillEdittext.error = null
-                binding.ratingBar.rating = currentItem.rating.toFloat()
+        fun bindTo(item: SkillsModel, isExpanded: Boolean) = with(binding) {
+            // Header text
+            company.text = (item.skillName ?: "").ifEmpty { "Skill Name" }
 
-                // If the item is newly added (e.g., name is empty), request focus.
+            // Editor values
+            skillEdittext.setText(item.skillName ?: "")
+            skillEdittext.error = null
+            ratingBar.rating = (item.skillLevel ?: 0).toFloat()
 
+            // Accordion
+            dataConstraint.isVisible = isExpanded
+            company.isVisible = !isExpanded
+            skilldetailicn.rotation = if (isExpanded) 0f else 180f
 
-                tryCatch {
-                    if (currentItem.name.isEmpty()) {
-                        onEditTextCompleteListener?.requestFocusForNewItem(skillEdittext)
-                    }
-                }
+            if (item.skillName.isNullOrEmpty()) {
+                onEditTextCompleteListener?.requestFocusForNewItem(skillEdittext)
+            }
 
+            // Input config
+            applyCapitalizeFilter(skillEdittext)
+            setupEditTextofAdaptors(
+                skillEdittext,
+                InputType.TYPE_CLASS_TEXT,
+                EditorInfo.IME_ACTION_NEXT
+            )
 
-                // Apply the InputFilter to the name field
-                applyCapitalizeFilter(skillEdittext)
-
-
-                setupEditTextofAdaptors(
-                    binding.skillEdittext,
-                    InputType.TYPE_CLASS_TEXT,
-                    EditorInfo.IME_ACTION_NEXT
-                )
-
-
-
-                ratingBar.setOnRatingBarChangeListener { _, rating, _ ->
-
-                    // onRatingBarChangeListener?.onRatingChanged(adapterPosition, rating)
-
-                    onEditTextCompleteListener?.onRatingChanged(
-                        adapterPosition,
-                        rating
-                    )
-
-
-                }
-                skillEdittext.addTextChangedListener(object : TextWatcher {
-                    override fun beforeTextChanged(
-                        s: CharSequence?,
-                        start: Int,
-                        count: Int,
-                        after: Int
-                    ) {
-                    }
-
-                    override fun onTextChanged(
-                        s: CharSequence?,
-                        start: Int,
-                        before: Int,
-                        count: Int
-                    ) {
-                    }
-
-                    override fun afterTextChanged(s: Editable?) {
-                        s?.let { newText ->
-                            onEditTextCompleteListener?.onSkillNameTextChange(
-                                adapterPosition,
-                                newText.toString()
-                            )
-
-
-                            if (newText.isNotEmpty()) {
-                                // Enable radio buttons when the skill name is not empty
-
-                                //enableRadioButtons()
-
-                                if (newText.length <= 30) {
-
-                                } else {
-
-                                    // Trim the input to 30 characters
-                                    val trimmedText = newText.substring(0, 30)
-                                    binding.skillEdittext.setText(trimmedText)
-                                    // Set the cursor to the end of the trimmed text
-                                    binding.skillEdittext.setSelection(trimmedText.length)
-                                    binding.skillEdittext.error =
-                                        "Character limit exceeded (30 characters max)."
-                                }
-
-                            } else {
-
-                            }
+            // Name watcher (30 char cap)
+            skillEdittext.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    val txt = s?.toString().orEmpty()
+                    if (txt.length > 30) {
+                        val trimmed = txt.substring(0, 30)
+                        skillEdittext.setText(trimmed)
+                        skillEdittext.setSelection(trimmed.length)
+                        skillEdittext.error = "Character limit exceeded (30 max)."
+                        onEditTextCompleteListener?.onSkillNameTextChange(absoluteAdapterPosition, trimmed)
+                        // Update header if collapsed
+                        if (!dataConstraint.isVisible) company.text = "Skill Name"
+                    } else {
+                        onEditTextCompleteListener?.onSkillNameTextChange(absoluteAdapterPosition, txt)
+                        if (!dataConstraint.isVisible) {
+                            company.text = if (txt.isBlank()) "Skill Name" else txt
                         }
                     }
-                })
-                skilldetailicn.setOnClickListener {
-                    toggleVisibility()
                 }
-                removeItem.setOnClickListener {
-                    onEditTextCompleteListener?.onItemRemoved(adapterPosition)
-                }
+            })
 
+            // Rating -> INT 0..5 (you enforce 1..5 at save)
+            ratingBar.setOnRatingBarChangeListener { _, rf, _ ->
+                onEditTextCompleteListener?.onRatingChanged(absoluteAdapterPosition, rf.toInt().coerceIn(0, 5))
+            }
+
+            // Expand/collapse
+            skilldetailicn.setOnClickListener { expandOnly(absoluteAdapterPosition) }
+            company.setOnClickListener { expandOnly(absoluteAdapterPosition) }
+
+            // Remove
+            removeItem.setOnClickListener {
+                if (absoluteAdapterPosition != RecyclerView.NO_POSITION) {
+                    onEditTextCompleteListener?.onItemRemoved(absoluteAdapterPosition)
+                }
             }
         }
-
-        private fun toggleVisibility() {
-            val isDataVisible = binding.dataConstraint.isVisible
-            binding.dataConstraint.isVisible = !isDataVisible
-            binding.company.text = currentList[position].name.ifEmpty { "Skill Name" }
-            binding.skilldetailicn.rotation = if (isDataVisible) 180f else 0f
-        }
-
     }
 
-    class DiffCallback : DiffUtil.ItemCallback<OtherSkill>() {
-        override fun areItemsTheSame(oldItem: OtherSkill, newItem: OtherSkill) =
-            oldItem.id == newItem.id
-
-        override fun areContentsTheSame(oldItem: OtherSkill, newItem: OtherSkill) =
-            oldItem == newItem
+    class DiffCallback : DiffUtil.ItemCallback<SkillsModel>() {
+        override fun areItemsTheSame(oldItem: SkillsModel, newItem: SkillsModel) = oldItem === newItem
+        override fun areContentsTheSame(oldItem: SkillsModel, newItem: SkillsModel) = oldItem == newItem
     }
-
-
 }
-

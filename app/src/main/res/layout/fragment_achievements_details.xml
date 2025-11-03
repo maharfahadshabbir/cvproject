@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/frameLayout9"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -98,134 +99,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <!-- One achievement block (duplicate on Add more) -->
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/achievement_container"
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/achievement_recycler_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/_12sdp"
-                android:padding="@dimen/_12sdp"
-                app:layout_constraintTop_toTopOf="parent">
-
-                <!-- Title -->
-                <TextView
-                    android:id="@+id/tvTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:drawableStart="@drawable/award_icon"
-                    android:drawablePadding="@dimen/_10sdp"
-                    android:fontFamily="@font/poppins_regular"
-                    android:text="@string/title"
-                    android:textColor="@color/textColor"
-                    android:textSize="12sp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <EditText
-                    android:id="@+id/etTitle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/_8sdp"
-                    android:background="@drawable/ic_bg_pro"
-                    android:hint="Employee of the year"
-                    android:paddingHorizontal="@dimen/_10sdp"
-                    android:paddingVertical="@dimen/_10sdp"
-                    android:textColor="@color/textColor"
-                    android:textColorHint="@color/gray_tx_color"
-                    android:textSize="@dimen/_12sdp"
-                    app:layout_constraintTop_toBottomOf="@id/tvTitle" />
-
-                <!-- Organization / Issuer -->
-                <TextView
-                    android:id="@+id/tvOrg"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/_12sdp"
-                    android:drawablePadding="@dimen/_10sdp"
-                    android:fontFamily="@font/poppins_regular"
-                    android:text="@string/organization_issuer"
-                    android:textColor="@color/textColor"
-                    android:textSize="12sp"
-                    app:drawableStartCompat="@drawable/institute_icon"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/etTitle" />
-
-                <EditText
-                    android:id="@+id/etOrg"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/_8sdp"
-                    android:background="@drawable/ic_bg_pro"
-                    android:hint="NUST University"
-                    android:paddingHorizontal="@dimen/_10sdp"
-                    android:paddingVertical="@dimen/_10sdp"
-                    android:textColor="@color/textColor"
-                    android:textColorHint="@color/gray_tx_color"
-                    android:textSize="@dimen/_12sdp"
-                    app:layout_constraintTop_toBottomOf="@id/tvOrg" />
-
-                <!-- Year / Date -->
-                <TextView
-                    android:id="@+id/tvYearDate"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/_12sdp"
-                    android:drawableStart="@drawable/calendar_icon"
-                    android:drawablePadding="@dimen/_10sdp"
-                    android:fontFamily="@font/poppins_regular"
-                    android:text="@string/year_date"
-                    android:textColor="@color/textColor"
-                    android:textSize="12sp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/etOrg" />
-
-                <EditText
-                    android:id="@+id/etYearDate"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/_8sdp"
-                    android:background="@drawable/ic_bg_pro"
-                    android:hint="MM/YY"
-                    android:inputType="text"
-                    android:drawableEnd="@drawable/calendar_gray"
-                    android:paddingHorizontal="@dimen/_10sdp"
-                    android:paddingVertical="@dimen/_10sdp"
-                    android:textColor="@color/textColor"
-                    android:textSize="@dimen/_12sdp"
-                    app:layout_constraintTop_toBottomOf="@id/tvYearDate" />
-
-                <!-- Description -->
-                <TextView
-                    android:id="@+id/tvDesc"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/_12sdp"
-                    android:drawableStart="@drawable/details_icon"
-                    android:drawablePadding="@dimen/_10sdp"
-                    android:fontFamily="@font/poppins_regular"
-                    android:text="@string/description"
-                    android:textColor="@color/textColor"
-                    android:textSize="12sp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/etYearDate" />
-
-                <EditText
-                    android:id="@+id/etDesc"
-                    android:layout_width="match_parent"
-                    android:layout_height="120dp"
-                    android:layout_marginTop="@dimen/_8sdp"
-                    android:background="@drawable/ic_bg_pro"
-                    android:gravity="top|start"
-                    android:hint="@string/enter_your_text"
-                    android:paddingHorizontal="@dimen/_10sdp"
-                    android:paddingVertical="@dimen/_10sdp"
-                    android:textColor="@color/textColor"
-                    android:textColorHint="@color/gray_tx_color"
-                    android:textSize="@dimen/_12sdp"
-                    app:layout_constraintTop_toBottomOf="@id/tvDesc" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-            <!-- /achievement_container -->
+                android:visibility="visible"
+                app:layout_constraintBottom_toTopOf="@id/addMoreAchievement"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:itemCount="1"
+                tools:listitem="@layout/achievements_item" />
 
             <!-- Add more -->
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -235,7 +120,7 @@
                 android:layout_marginTop="@dimen/_16sdp"
                 android:layout_marginHorizontal="16dp"
                 android:background="@drawable/addmore_bg"
-                app:layout_constraintTop_toBottomOf="@id/achievement_container"
+                app:layout_constraintTop_toBottomOf="@id/achievement_recycler_view"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
 

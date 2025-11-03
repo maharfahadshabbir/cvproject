@@ -1,11 +1,9 @@
 package com.example.cvmaker.fragments.profiledetail.adapters
 
-
 import android.annotation.SuppressLint
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -20,147 +18,130 @@ import com.example.cvmaker.R
 import com.example.cvmaker.databinding.ExperienceRowItemBinding
 import com.example.cvmaker.fragments.profiledetail.util.DatePickerUtil
 import com.example.cvmaker.fragments.profiledetail.util.ViewUtils
-import com.example.cvmaker.model.profilemodels.Experience
-
+import com.example.cvmaker.model.workingmodels.ExperienceModel
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlin.text.ifEmpty
 
-class ExperienceAdapter() :
-    ListAdapter<Experience, ExperienceAdapter.ViewHolder>(
-        DiffCallback()
-    ) {
-
-
+class ExperienceAdapter :
+    ListAdapter<ExperienceModel, ExperienceAdapter.ViewHolder>(DiffCallback()) {
 
     private val datePickerUtil = DatePickerUtil()
     private var onEditTextCompleteListener: OnEditTextCompleteListener? = null
-    var msg = "issue"
+    private var msg = "issue"
+
+    // Only one expanded at a time
+    private val expandedPositions = mutableSetOf<Int>()
 
     interface OnEditTextCompleteListener {
         fun onCompanyNameTextChangeChange(position: Int, text: String)
         fun onDetailTextChange(position: Int, text: String)
-        fun onStartDateChange(position: Int, text: String)
-        fun onEndDateChange(position: Int, text: String)
+        fun onStartDateChange(position: Int, text: String)   // MM/dd/yyyy
+        fun onEndDateChange(position: Int, text: String)     // MM/dd/yyyy or "Present"
         fun onJobTextChange(position: Int, text: String)
         fun onCheckBoxStateChanged(position: Int, isChecked: Boolean)
         fun requestFocusForNewItem(editText: EditText)
-
         fun removeItem(position: Int)
-
     }
 
     fun setOnEditTextCompleteListener(listener: OnEditTextCompleteListener) {
         onEditTextCompleteListener = listener
     }
 
+    /** Collapse all and expand only this position */
+    fun expandOnly(position: Int) {
+        expandedPositions.clear()
+        if (position in 0 until itemCount) expandedPositions.add(position)
+        notifyDataSetChanged()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-       val binding =
-            ExperienceRowItemBinding.inflate(
-                LayoutInflater.from(parent.context),
-                parent,
-                false
-            )
+        val binding = ExperienceRowItemBinding.inflate(
+            LayoutInflater.from(parent.context), parent, false
+        )
         return ViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val currentItem = getItem(position)
-        holder.bindTo(currentItem)
+        holder.bindTo(getItem(position), expandedPositions.contains(position))
     }
 
-
-    private inner class GenericTextWatcher(val binding: ExperienceRowItemBinding,private val fieldUpdater: (String) -> Unit) :
-        TextWatcher {
-        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-            // Not used in this example
-        }
-
-        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            // Not used in this example
-        }
-
-        override fun afterTextChanged(s: Editable?) {
-            // Notify the listener when EditText changes are completed
-            s?.let { fieldUpdater.invoke(it.toString()) }
-
-            if (binding.startDateEdittext.text?.length!! >= 8 && binding.endDateEdittext.text?.length!! >= 8) {
-                val check = validateStartandEnddate(
-                    binding.startDateEdittext.text.toString(),
-                    binding.endDateEdittext.text.toString()
-                )
-                if (check) {
-                    binding.startDateEdittext.error = null
-                } else {
-                    if (msg == "") {
-                        binding.startDateEdittext.error = null
-                    } else {
-                        binding.startDateEdittext.error = msg
-                    }
-                }
-                if (msg == "") {
-                    binding.startDateEdittext.error = null
-                } else {
-                    binding.startDateEdittext.error = msg
-                }
-            }
-        }
-    }
-
-
-    inner class ViewHolder(val binding: ExperienceRowItemBinding) :
+    inner class ViewHolder(private val binding: ExperienceRowItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
-        @SuppressLint("SuspiciousIndentation")
-        fun bindTo(currentItem: Experience) {
-            // Check if the item is not null
-            // Bind data to the views here
-            try {
-                if (currentItem.company_name.isEmpty()) {
-                    onEditTextCompleteListener?.requestFocusForNewItem(binding.companyEdittext)
+        private var companyWatcher: TextWatcher? = null
+        private var designationWatcher: TextWatcher? = null
+        private var detailWatcher: TextWatcher? = null
+        private var startWatcher: TextWatcher? = null
+        private var endWatcher: TextWatcher? = null
 
-                }
-            } catch (e: Exception) {
-                TODO("Not yet implemented")
-            }
-            binding.companyEdittext.setText(currentItem?.company_name ?: "")
-            binding.designationEdittext.setText(currentItem?.designation ?: "")
-            binding.detailEditTxt.setText(currentItem.description)
-            // Check if start_at and end_at are not null before proceeding
-            if (currentItem.start_at != null) {
-                binding.startDateEdittext.setText(ViewUtils.formatDate(currentItem.start_at!!))
-            } else {
-                Log.e(
-                    "DateParsingError",
-                    "Failed to parse date. start_at: ${currentItem.start_at}, end_at: ${currentItem.end_at}"
+        private fun detachWatchers() {
+            companyWatcher?.let { binding.companyEdittext.removeTextChangedListener(it) }
+            designationWatcher?.let { binding.designationEdittext.removeTextChangedListener(it) }
+            detailWatcher?.let { binding.detailEditTxt.removeTextChangedListener(it) }
+            startWatcher?.let { binding.startDateEdittext.removeTextChangedListener(it) }
+            endWatcher?.let { binding.endDateEdittext.removeTextChangedListener(it) }
+            companyWatcher = null; designationWatcher = null; detailWatcher = null
+            startWatcher = null; endWatcher = null
+        }
+
+        @SuppressLint("SetTextI18n")
+        fun bindTo(item: ExperienceModel, isExpanded: Boolean) {
+            // 1) Reset listeners to avoid duplicates on rebind
+            detachWatchers()
+
+            // 2) Prefill edit fields from model
+            binding.companyEdittext.setText(item.companyName.orEmpty())
+            binding.designationEdittext.setText(item.designation.orEmpty())
+            binding.detailEditTxt.setText(item.detail.orEmpty())
+
+            val startUi = item.startDate?.let { isoToUi(it) }
+            val endUi = item.endDate?.let { isoToUi(it) }
+
+            if (startUi != null) binding.startDateEdittext.setText(startUi)
+            else binding.startDateEdittext.text = null
+
+            if (item.isCurrentWorking) binding.endDateEdittext.setText(R.string.present)
+            else if (endUi != null) binding.endDateEdittext.setText(endUi)
+            else binding.endDateEdittext.text = null
+
+            // 3) Checkbox / end-date enable
+            binding.checkboxfordate.setOnCheckedChangeListener(null)
+            binding.checkboxfordate.isChecked = item.isCurrentWorking
+            CompoundButtonCompat.setButtonTintList(
+                binding.checkboxfordate,
+                ContextCompat.getColorStateList(
+                    itemView.context,
+                    if (item.isCurrentWorking) R.color.blue else R.color.gray_tx_color
                 )
-            }
-            if (currentItem.end_at != null) {
-                binding.endDateEdittext.setText(ViewUtils.formatDate(currentItem.end_at!!))
-            } else {
-                if (currentItem.present) {
-                    Log.e(
-                        "DateParsingError",
-                        "Failed to parse date. end date is ${currentItem.end_at} and present is ${currentItem.present}"
-                    )
-                    binding.checkboxfordate.isChecked = true
-                    CompoundButtonCompat.setButtonTintList(
-                        binding.checkboxfordate,
-                        ContextCompat.getColorStateList(itemView.context, R.color.blue)
-                    )
-                    updateCheckBoxState(currentItem)
-                }
-            }
+            )
+            binding.endDateEdittext.isEnabled = !item.isCurrentWorking
 
+            // 4) Header / accordion visibility (NO overlay):
+            // We use ONLY the `company` TextView as the header.
+            val header = item.companyName?.takeIf { it.isNotBlank() }
+                ?: itemView.context.getString(R.string.institute)
+            binding.company.text = header
+
+            // Title row must be hidden entirely to avoid overlap
+            binding.title.isVisible = false
+            binding.titledetailicn.isVisible = false
+
+            // Show header row only when collapsed; show editor only when expanded
+            binding.company.isVisible = !isExpanded
+            binding.viewInstitutedetailicn.isVisible = !isExpanded
+            binding.dataConstraint.isVisible = isExpanded
+            binding.viewInstitutedetailicn.rotation = if (isExpanded) 0f else 180f
+
+            // Clear errors
             binding.companyEdittext.error = null
             binding.designationEdittext.error = null
             binding.detailEditTxt.error = null
             binding.startDateEdittext.error = null
             binding.endDateEdittext.error = null
-            // Example usage:
+
+            // 5) Inputs
             ViewUtils.setupEditTextofAdaptors(
                 binding.companyEdittext,
                 InputType.TYPE_CLASS_TEXT,
@@ -173,326 +154,208 @@ class ExperienceAdapter() :
                 EditorInfo.IME_ACTION_NEXT,
                 binding.startDateEdittext
             )
-
-            // Apply the InputFilter to the name field
             ViewUtils.applyCapitalizeFilter(binding.companyEdittext)
             ViewUtils.applyCapitalizeFilter(binding.designationEdittext)
 
+            // 6) Date pickers
+            binding.startDateEdittext.inputType = InputType.TYPE_NULL
             binding.endDateEdittext.inputType = InputType.TYPE_NULL
-            binding.startDateEdittext.inputType =
-                InputType.TYPE_NULL // or set in XML: android:inputType="none"
 
             val showDatePicker: (EditText, (String) -> Unit) -> Unit = { editText, onDateSelected ->
                 itemView.context?.let { context ->
-                    val calendar = Calendar.getInstance()
-                    val dateFormat = SimpleDateFormat("MM/dd/yyyy", Locale.getDefault())
-
-                    // Check if the EditText already has a selected date
-                    val previousDate = editText.text.toString()
-                    if (previousDate.isNotEmpty()) {
-                        try {
-                            val parsedDate = dateFormat.parse(previousDate)
-                            parsedDate?.let { calendar.time = it }
-                        } catch (e: ParseException) {
-                            e.printStackTrace()
-                        }
+                    val cal = Calendar.getInstance()
+                    val fmt = SimpleDateFormat("MM/dd/yyyy", Locale.getDefault())
+                    val prev = editText.text?.toString().orEmpty()
+                    if (prev.isNotEmpty() && prev != context.getString(R.string.present)) {
+                        try { fmt.parse(prev)?.let { cal.time = it } } catch (_: ParseException) {}
                     }
-
                     datePickerUtil.showDatePickerDialog(
-                        calendar,
-                        0,
-                        context,
+                        cal, 0, context,
                         object : DatePickerUtil.DateSelectedListener {
                             override fun onDateSelected(formattedDate: String) {
                                 onDateSelected(formattedDate)
                             }
-                        })
+                        }
+                    )
                 }
             }
-
-
 
             binding.startDateEdittext.setOnClickListener {
-                showDatePicker(binding.startDateEdittext) { selectedDate ->
-                    binding.startDateEdittext.setText(selectedDate)
-                }
+                showDatePicker(binding.startDateEdittext) { d -> binding.startDateEdittext.setText(d) }
             }
             binding.startDateEdittext.setOnFocusChangeListener { _, hasFocus ->
-                if (hasFocus) {
-                    showDatePicker(binding.startDateEdittext) { selectedDate ->
-
-                        binding.startDateEdittext.setText(selectedDate)
-                    }
+                if (hasFocus) showDatePicker(binding.startDateEdittext) { d ->
+                    binding.startDateEdittext.setText(d)
                 }
             }
 
             binding.endDateEdittext.setOnClickListener {
-                showDatePicker(binding.endDateEdittext) { selectedDate ->
-                    binding.endDateEdittext.setText(selectedDate)
+                if (!binding.checkboxfordate.isChecked) {
+                    showDatePicker(binding.endDateEdittext) { d -> binding.endDateEdittext.setText(d) }
                 }
             }
-
             binding.endDateEdittext.setOnFocusChangeListener { _, hasFocus ->
-                if (hasFocus) {
-                    showDatePicker(binding.endDateEdittext) { selectedDate ->
-                        binding.endDateEdittext.setText(selectedDate)
-                    }
+                if (hasFocus && !binding.checkboxfordate.isChecked) {
+                    showDatePicker(binding.endDateEdittext) { d -> binding.endDateEdittext.setText(d) }
                 }
             }
 
-            // Set listeners for EditText changes
-            binding.companyEdittext.addTextChangedListener(GenericTextWatcher(binding) { newText ->
-                if (newText.isNotEmpty()) {
-                    if (newText.length <= 50) {
-                    } else {
-                        // Trim the input to 30 characters
-                        val trimmedText = newText.substring(0, 50)
-                        binding.companyEdittext.setText(trimmedText)
-                        // Set the cursor to the end of the trimmed text
-                        binding.companyEdittext.setSelection(trimmedText.length)
-                        binding.companyEdittext.error =
-                            "Character limit exceeded (50 characters max)."
-                    }
+            // 7) Text watchers (attach AFTER prefill)
+            companyWatcher = watcher { txt ->
+                val t = if (txt.length > 50) txt.take(50) else txt
+                if (t.length != txt.length) {
+                    binding.companyEdittext.setText(t)
+                    binding.companyEdittext.setSelection(t.length)
+                    binding.companyEdittext.error = "Character limit exceeded (50 max)."
                 }
+                onEditTextCompleteListener?.onCompanyNameTextChangeChange(absoluteAdapterPosition, t)
+                // Update header live if collapsed
+                if (!binding.dataConstraint.isVisible) binding.company.text =
+                    t.ifBlank { itemView.context.getString(R.string.institute) }
+            }
+            binding.companyEdittext.addTextChangedListener(companyWatcher)
 
-                onEditTextCompleteListener?.onCompanyNameTextChangeChange(adapterPosition, newText)
-            })
-
-
-
-            binding.designationEdittext.addTextChangedListener(GenericTextWatcher (binding){ newText ->
-                if (newText.isNotEmpty()) {
-                    if (newText.length <= 50) {
-
-                    } else {
-
-                        // Trim the input to 30 characters
-                        val trimmedText = newText.substring(0, 50)
-                        binding.designationEdittext.setText(trimmedText)
-                        // Set the cursor to the end of the trimmed text
-                        binding.designationEdittext.setSelection(trimmedText.length)
-                        binding.designationEdittext.error =
-                            "Character limit exceeded (30 characters max)."
-                    }
+            designationWatcher = watcher { txt ->
+                val t = if (txt.length > 50) txt.take(50) else txt
+                if (t.length != txt.length) {
+                    binding.designationEdittext.setText(t)
+                    binding.designationEdittext.setSelection(t.length)
+                    binding.designationEdittext.error = "Character limit exceeded (50 max)."
                 }
-                onEditTextCompleteListener?.onJobTextChange(adapterPosition, newText)
-            })
+                onEditTextCompleteListener?.onJobTextChange(absoluteAdapterPosition, t)
+            }
+            binding.designationEdittext.addTextChangedListener(designationWatcher)
 
-            binding.detailEditTxt.addTextChangedListener(GenericTextWatcher (binding){ newText ->
-//                if (newText.isNotEmpty()) {
-//                    if (newText.length <= 30) {
-//
-//                    } else {
-//
-//                        // Trim the input to 30 characters
-//                        val trimmedText = newText.substring(0, 30)
-//                        binding.detailEditTxt.setText(trimmedText)
-//                        // Set the cursor to the end of the trimmed text
-//                        binding.detailEditTxt.setSelection(trimmedText.length)
-//                        binding.detailEditTxt.error = "Character limit exceeded (30 characters max)."
-//                    }
-//                }
-                onEditTextCompleteListener?.onDetailTextChange(adapterPosition, newText)
-            })
-            binding.startDateEdittext.addTextChangedListener(GenericTextWatcher(binding) { newText ->
+            detailWatcher = watcher { txt ->
+                onEditTextCompleteListener?.onDetailTextChange(absoluteAdapterPosition, txt)
+            }
+            binding.detailEditTxt.addTextChangedListener(detailWatcher)
 
-                val check = validateStartandEnddate(
-                    binding.startDateEdittext.text.toString(),
-                    binding.endDateEdittext.text.toString()
+            startWatcher = watcher {
+                val ok = validateStartandEnddate(
+                    binding.startDateEdittext.text?.toString().orEmpty(),
+                    binding.endDateEdittext.text?.toString().orEmpty()
                 )
-                if (check) {
-                    binding.startDateEdittext.error = null
-                }
-                onEditTextCompleteListener?.onStartDateChange(adapterPosition, newText)
-            })
+                binding.startDateEdittext.error = if (ok || msg.isEmpty()) null else msg
+                onEditTextCompleteListener?.onStartDateChange(
+                    absoluteAdapterPosition,
+                    binding.startDateEdittext.text?.toString().orEmpty()
+                )
+            }
+            binding.startDateEdittext.addTextChangedListener(startWatcher)
 
-            binding.endDateEdittext.addTextChangedListener(GenericTextWatcher(binding) { newText ->
-                onEditTextCompleteListener?.onEndDateChange(adapterPosition, newText)
-            })
+            endWatcher = watcher {
+                onEditTextCompleteListener?.onEndDateChange(
+                    absoluteAdapterPosition,
+                    binding.endDateEdittext.text?.toString().orEmpty()
+                )
+            }
+            binding.endDateEdittext.addTextChangedListener(endWatcher)
 
+            // 8) Toggle collapse/expand via header row
             binding.viewInstitutedetailicn.setOnClickListener {
-                toggleVisibility()
+                expandOnly(absoluteAdapterPosition)
+            }
+            binding.company.setOnClickListener {
+                expandOnly(absoluteAdapterPosition)
             }
 
-
+            // 9) Remove
             binding.removeItem.setOnClickListener {
-                if(absoluteAdapterPosition!= RecyclerView.NO_POSITION) {
+                if (absoluteAdapterPosition != RecyclerView.NO_POSITION) {
                     onEditTextCompleteListener?.removeItem(absoluteAdapterPosition)
                 }
             }
 
-            // Set listener for CheckBox changes
-            binding.checkboxfordate.setOnCheckedChangeListener { _, isChecked ->
-                // currentItem.present = true
-                updateCheckBoxState(currentItem)
-                onEditTextCompleteListener?.onCheckBoxStateChanged(adapterPosition, isChecked)
+            // 10) Checkbox logic (don’t blank dates on collapse)
+            binding.checkboxfordate.setOnCheckedChangeListener { _, checked ->
+                val tint = ContextCompat.getColorStateList(
+                    itemView.context,
+                    if (checked) R.color.blue else R.color.gray_tx_color
+                )
+                CompoundButtonCompat.setButtonTintList(binding.checkboxfordate, tint)
+                if (checked) {
+                    binding.endDateEdittext.setText(R.string.present)
+                    binding.endDateEdittext.isEnabled = false
+                } else {
+                    if (binding.endDateEdittext.text?.toString() ==
+                        itemView.context.getString(R.string.present)
+                    ) {
+                        binding.endDateEdittext.text = null // keep previous date if user set later
+                    }
+                    binding.endDateEdittext.hint = "MM/DD/YYYY"
+                    binding.endDateEdittext.isEnabled = true
+                }
+                onEditTextCompleteListener?.onCheckBoxStateChanged(absoluteAdapterPosition, checked)
+            }
+
+            // Focus company on brand-new row
+            if ((item.companyName ?: "").isBlank()) {
+                onEditTextCompleteListener?.requestFocusForNewItem(binding.companyEdittext)
             }
         }
 
-        private fun toggleVisibility() {
-            val isDataVisible = binding.dataConstraint.isVisible
-            binding.dataConstraint.isVisible = !isDataVisible
-            binding.company.text = currentList[position].company_name.ifEmpty { "Institute" }
-            binding.viewInstitutedetailicn.rotation = if (isDataVisible) 180f else 0f
-        }
-
-        private fun updateCheckBoxState(currentItem: Experience) {
-            val isChecked = binding.checkboxfordate.isChecked
-
-            // Change the check color to blue when checked
-            val blueColor = ContextCompat.getColorStateList(itemView.context, R.color.blue)
-            val gray = ContextCompat.getColorStateList(itemView.context, R.color.gray_tx_color)
-
-            // Disable the end date EditText if CheckBox is checked
-            if (isChecked) {
-                currentItem.present = true
-                CompoundButtonCompat.setButtonTintList(binding.checkboxfordate, blueColor)
-                binding.endDateEdittext.setText(R.string.present)
-                binding.endDateEdittext.isEnabled = !isChecked
-            } else {
-                currentItem.present = false
-                CompoundButtonCompat.setButtonTintList(binding.checkboxfordate, gray)
-
-                binding.endDateEdittext.text?.clear()
-                binding.endDateEdittext.hint = "MM/DD/YYYY"
-                binding.endDateEdittext.isEnabled = !isChecked
-
-            }
+        private fun watcher(after: (String) -> Unit) = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) { after(s?.toString().orEmpty()) }
         }
     }
 
-    fun validateStartandEnddate(startDateText: String, endDateText: String): Boolean {
-        var check = false
-        val currentCalendar = Calendar.getInstance()
-        val currentYear = currentCalendar.get(Calendar.YEAR)
-        val currentday = currentCalendar.get(Calendar.DAY_OF_MONTH)
-        val currentMonth =
-            currentCalendar.get(Calendar.MONTH) + 1 // Adding 1 because months are zero-based
+    // MM/dd/yyyy validation; allows "Present"
+    private fun validateStartandEnddate(startDateText: String, endDateText: String): Boolean {
+        var ok = false
+        val cal = Calendar.getInstance()
+        val cy = cal.get(Calendar.YEAR)
+        val cm = cal.get(Calendar.MONTH) + 1
+        val cd = cal.get(Calendar.DAY_OF_MONTH)
 
-        if (startDateText.isNotEmpty() && endDateText.isNotEmpty()) {
-            val startParts = startDateText.split("/")
-            val endParts = endDateText.split("/")
-
-            if (startParts.size == 3 && endParts.size == 3) {
-
-                val startMonth = startParts[0].toIntOrNull()
-                val startDay = startParts[1].toIntOrNull()
-                val startYear = startParts[2].toIntOrNull()
-                val endMonth = endParts[0].toIntOrNull()
-                val endDay = endParts[1].toIntOrNull()
-                val endYear = endParts[2].toIntOrNull()
-                Log.d(
-                    "validateStartandEnddate",
-                    "validateStartandEnddate: startmonth is $currentYear and startyear is $startYear , endmonth is $endMonth and endyear is $endYear"
-                )
-                if (startMonth != null && startYear != null && endMonth != null && endYear != null && endDay != null && startDay != null) {
-                    if (((startYear < (currentYear)) || (startYear == currentYear && startMonth < currentMonth) || (startYear == currentYear && startMonth == currentMonth && startDay <= currentday)) && ((endYear < (currentYear)) || (endYear == currentYear && endMonth < currentMonth) || (endYear == currentYear && endMonth == currentMonth && endDay <= currentday))) {
-                        if (startYear < endYear || (startYear == endYear && startMonth < endMonth) || (startYear == endYear && startMonth == endMonth && startDay <= endDay)) {
-                            msg = ""
-                            check = true // Start date is earlier than end date
-                        } else {
-                            msg = "End Date should be greater than Start Date"
-                            check = false
-                        }
-                    } else {
-                        msg = "Start and End Years should be less than the current year"
-                        check = false
-                    }
-                } else {
-                    msg = "Invalid date parameters"
-                    check = false
-                }
-            } else if (endDateText == "Present") {
-
-
-                val calendar = Calendar.getInstance()
-
-                val dateFormat = SimpleDateFormat("MM/dd/yyyy", Locale.getDefault())
-                val formattedDate = dateFormat.format(calendar.time)
-
-                val endParts = formattedDate.split("/")
-
-                val startMonth = startParts[0].toIntOrNull()
-                val startDay = startParts[1].toIntOrNull()
-                val startYear = startParts[2].toIntOrNull()
-                val endMonth = endParts[0].toIntOrNull()
-                val endDay = endParts[1].toIntOrNull()
-                val endYear = endParts[2].toIntOrNull()
-                ///
-                Log.d(
-                    "validateStartandEnddate",
-                    "validateStartandEnddate: startmonth is $startMonth and startyear is $startYear , endmonth is $endMonth and endyear is $endYear"
-                )
-                if (startMonth != null && startYear != null && endMonth != null && endYear != null && endDay != null && startDay != null) {
-                    if (((startYear < (currentYear)) || (startYear == currentYear && startMonth < currentMonth) || (startYear == currentYear && startMonth == currentMonth && startDay <= currentday)) && ((endYear < (currentYear)) || (endYear == currentYear && endMonth < currentMonth) || (endYear == currentYear && endMonth == currentMonth && endDay <= currentday))) {
-                        if (startYear < endYear || (startYear == endYear && startMonth < endMonth) || (startYear == endYear && startMonth == endMonth && startDay <= endDay)) {
-                            msg = ""
-                            check = true // Start date is earlier than end date
-                        } else {
-                            msg = "End Date should be greater than Start Date"
-                            check = false
-                        }
-                    } else {
-                        msg = "Start and End Years should be less than the current year"
-                        check = false
-                    }
-                } else {
-                    msg = "Invalid date parameters"
-                    check = false
-                }
-            }
-        } else {
-            Log.d("validateStartandEndddfffffate", "validateStartandEnddate: ")
+        if (startDateText.isEmpty()) return false
+        if (endDateText == "Present") {
+            val p = startDateText.split("/")
+            val sm = p.getOrNull(0)?.toIntOrNull()
+            val sd = p.getOrNull(1)?.toIntOrNull()
+            val sy = p.getOrNull(2)?.toIntOrNull()
+            ok = sm != null && sd != null && sy != null &&
+                    (sy < cy || sy == cy && (sm < cm || sm == cm && sd <= cd))
+            msg = if (ok) "" else "Start date cannot be in the future"
+            return ok
         }
 
-        return check // Invalid date or end date is not later than the start date
+        if (endDateText.isEmpty()) return false
+        val sp = startDateText.split("/")
+        val ep = endDateText.split("/")
+        val sm = sp.getOrNull(0)?.toIntOrNull()
+        val sd = sp.getOrNull(1)?.toIntOrNull()
+        val sy = sp.getOrNull(2)?.toIntOrNull()
+        val em = ep.getOrNull(0)?.toIntOrNull()
+        val ed = ep.getOrNull(1)?.toIntOrNull()
+        val ey = ep.getOrNull(2)?.toIntOrNull()
+        if (sm == null || sd == null || sy == null || em == null || ed == null || ey == null) {
+            msg = "Invalid date parameters"; return false
+        }
+
+        val startNotFuture = sy < cy || sy == cy && (sm < cm || sm == cm && sd <= cd)
+        val endNotFuture = ey < cy || ey == cy && (em < cm || em == cm && ed <= cd)
+        if (!startNotFuture || !endNotFuture) { msg = "Dates must not be in the future"; return false }
+
+        ok = sy < ey || sy == ey && (sm < em || sm == em && sd <= ed)
+        msg = if (ok) "" else "End Date should be greater than Start Date"
+        return ok
     }
 
-    class DiffCallback : DiffUtil.ItemCallback<Experience>() {
-        override fun areItemsTheSame(oldItem: Experience, newItem: Experience) =
-            oldItem.id == newItem.id
+    private fun isoToUi(iso: String): String {
+        return try {
+            val input = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            val output = SimpleDateFormat("MM/dd/yyyy", Locale.US)
+            input.parse(iso)?.let { output.format(it) } ?: ""
+        } catch (_: Exception) { "" }
+    }
 
-        override fun areContentsTheSame(oldItem: Experience, newItem: Experience) =
+    class DiffCallback : DiffUtil.ItemCallback<ExperienceModel>() {
+        override fun areItemsTheSame(oldItem: ExperienceModel, newItem: ExperienceModel) =
+            oldItem === newItem
+        override fun areContentsTheSame(oldItem: ExperienceModel, newItem: ExperienceModel) =
             oldItem == newItem
     }
-
-    private fun hideData(binding: ExperienceRowItemBinding, currentItem: Experience) {
-
-        if (currentItem.company_name.isNotEmpty()) {
-
-            binding.title.isVisible = true
-
-            binding.title.text = binding.companyEdittext.text.toString()
-
-            binding.titledetailicn.setBackgroundResource(R.drawable.hide_icon)
-
-            binding.titledetailicn.isVisible = true
-
-            binding.dataConstraint.isVisible = false
-
-        } else {
-
-            binding.title.text = binding.root.context.getString(R.string.title);
-
-            binding.title.isVisible = true
-
-            binding.titledetailicn.setBackgroundResource(R.drawable.hide_icon)
-
-            binding.titledetailicn.isVisible = true
-
-            binding.dataConstraint.isVisible = false
-
-        }
-    }
-
-    // Function to update visibility of views
-    private fun showData(binding: ExperienceRowItemBinding, currentItem: Experience) {
-        // Show company-related views and hide title-related views
-        binding.title.isVisible = false
-        binding.titledetailicn.isVisible = false
-
-        binding.dataConstraint.isVisible = true
-
-    }
 }
-

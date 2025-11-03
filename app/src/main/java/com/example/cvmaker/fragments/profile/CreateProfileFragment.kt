@@ -15,7 +15,7 @@ import androidx.navigation.fragment.findNavController
 import com.example.cvmaker.R
 import com.example.cvmaker.databinding.FragmentCreateProfileBinding
 import com.example.cvmaker.model.workingmodels.CvModelRequestDb
-import com.example.cvmaker.model.workingmodels.Education
+import com.example.cvmaker.model.workingmodels.EducationModel
 import com.example.cvmaker.typeConvertor.CvModelRequestEntity
 import com.example.cvmaker.viewmodels.MyViewModel
 import com.example.cvmaker.viewmodels.SharedViewModel
@@ -125,38 +125,6 @@ class CreateProfileFragment : Fragment() {
             lifecycleScope.launch {
                 try {
 
-                  var educationList = listOf(
-                        Education(
-                            institute = "Harvard University",
-                            course = "Computer Science",
-                            grade = "A+",
-                            startDate = "09/2018",
-                            endDate = "05/2022",
-                            isCurrentStudent = false
-                        ),
-                        Education(
-                            institute = "Stanford University",
-                            course = "Software Engineering",
-                            grade = "A",
-                            startDate = "09/2022",
-                            endDate = "Present",
-                            isCurrentStudent = true
-                        ),
-                        Education(
-                            institute = "MIT",
-                            course = "Artificial Intelligence",
-                            grade = "A+",
-                            startDate = "01/2021",
-                            endDate = "12/2023",
-                            isCurrentStudent = false
-                        )
-                    )
-
-
-
-                    sharedViewModel.cvModelRequestDb.educationList = educationList.toMutableList()
-                    Log.d("SaveCV", "🟢 Starting CV save process...")
-
                     // ✅ Check if cvModel is not null
                     val cvModel = sharedViewModel.cvModelRequestDb
                     if (cvModel == null) {
@@ -167,6 +135,7 @@ class CreateProfileFragment : Fragment() {
 
                     // ✅ Log key model info for debugging
                     Log.d("SaveCV", "Personal details: ${cvModel.personalDetails}")
+                    Log.d("SaveCVexperience", "experience details: ${cvModel.experienceList}")
 
                     val userId = UUID.randomUUID().toString()
 

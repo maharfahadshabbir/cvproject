@@ -1,6 +1,5 @@
 package com.example.cvmaker.fragments.profiledetail.adapters
 
-
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
@@ -14,38 +13,33 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.cvmaker.databinding.ProjectItemBinding
 import com.example.cvmaker.fragments.profiledetail.util.ViewUtils
-import com.example.cvmaker.model.profilemodels.Project
+import com.example.cvmaker.model.workingmodels.ProjectModel
 import com.example.cvmaker.utils.tryCatch
 
-
-class ProjectAdapter() :
-    ListAdapter<Project, ProjectAdapter.ViewHolder>(DiffCallback()) {
-
-
-    lateinit var binding: ProjectItemBinding
-
-    private var isBoldClicked = true
-    private var isItalicClicked = true
-    private var isUnderlineClicked = true
-
-    private var onEditTextCompleteListener: OnEditTextCompleteListener? = null
-
-
-
+class ProjectAdapter :
+    ListAdapter<ProjectModel, ProjectAdapter.ViewHolder>(DiffCallback()) {
 
     interface OnEditTextCompleteListener {
         fun onProjectTitleTextChange(position: Int, text: String)
         fun onProjectDescriptionChange(position: Int, text: String)
-
+        fun onProjectLinkChange(position: Int, text: String)
         fun requestNewFocus(editText: EditText)
-
-        fun OnRemoveItem(position: Int)
+        fun onRemoveItem(position: Int)
     }
 
-    fun setOnEditTextCompleteListener(listener: OnEditTextCompleteListener) {
-        onEditTextCompleteListener = listener
+    private var listener: OnEditTextCompleteListener? = null
+
+    // one-open accordion behavior
+    private val expandedPositions = mutableSetOf<Int>()
+    fun expandOnly(position: Int) {
+        expandedPositions.clear()
+        if (position in 0 until itemCount) expandedPositions.add(position)
+        notifyDataSetChanged()
     }
 
+    fun setOnEditTextCompleteListener(l: OnEditTextCompleteListener) {
+        listener = l
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ProjectItemBinding.inflate(
@@ -55,126 +49,93 @@ class ProjectAdapter() :
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val currentItem = getItem(position)
-        holder.bindTo(currentItem)
+        holder.bindTo(getItem(position), expandedPositions.contains(position))
     }
 
-
-    private inner class GenericTextWatcher(private val fieldUpdater: (String) -> Unit) :
-        TextWatcher {
-        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-            // Not used in this example
-        }
-
-        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            // Not used in this example
-        }
-
-        override fun afterTextChanged(s: Editable?) {
-            // Notify the listener when EditText changes are completed
-            s?.let { fieldUpdater.invoke(it.toString()) }
-        }
+    private fun tw(after: (String) -> Unit) = object : TextWatcher {
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        override fun afterTextChanged(s: Editable?) { after(s?.toString().orEmpty()) }
     }
-
 
     inner class ViewHolder(private val binding: ProjectItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
+        fun bindTo(item: ProjectModel, isExpanded: Boolean) = with(binding) {
+            // header
+            project.text = (item.projectTitle ?: "").ifEmpty { "Project Title" }
+            viewInstitutedetailicn.rotation = if (isExpanded) 0f else 180f
 
+            // details
+            projectEdittext.setText(item.projectTitle.orEmpty())
+            descriptionEditTxt.setText(item.description.orEmpty())
+            etLink.setText(item.link.orEmpty())
 
-        fun bindTo(currentItem: Project) {
+            // accordion
+            dataConstraint.isVisible = isExpanded
 
-            // Bind your data to the views using data binding
-            binding.projectEdittext.setText(currentItem.title)
-            binding.descriptionEditTxt.setText(currentItem.description)
-            binding.projectEdittext.error=null
-
+            // focus if new
             tryCatch {
-                if (currentItem.title.isEmpty()) {
-                    onEditTextCompleteListener?.requestNewFocus(binding.projectEdittext)
-
+                if (item.projectTitle.isNullOrEmpty()) {
+                    listener?.requestNewFocus(projectEdittext)
                 }
             }
 
-
-            ViewUtils.applyCapitalizeFilter(binding.projectEdittext)
-
+            // inputs & IME
+            ViewUtils.applyCapitalizeFilter(projectEdittext)
             ViewUtils.setupEditTextofAdaptors(
-                binding.projectEdittext,
+                projectEdittext,
                 InputType.TYPE_CLASS_TEXT,
                 EditorInfo.IME_ACTION_NEXT,
-                binding.descriptionEditTxt
+                descriptionEditTxt
             )
+            // description multi-line
+            descriptionEditTxt.imeOptions = EditorInfo.IME_FLAG_NO_ENTER_ACTION
+            descriptionEditTxt.inputType =
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            // link as URI
+            etLink.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
 
-            ViewUtils.hideKeyboard_c(binding.descriptionEditTxt)
-
-
-
-
-
-
-
-
-            // Set listeners for EditText changes
-            binding.projectEdittext.addTextChangedListener(GenericTextWatcher { newText ->
-                if (newText.length <= 30) {
-//                    if (ViewUtils.validateInput(newText)) {
-//                        binding.projectEdittext.error = null
-//                    } else {
-//                        binding.projectEdittext.error = "Invalid input"
-//                    }
+            // watchers
+            projectEdittext.addTextChangedListener(tw { text ->
+                val trimmed = if (text.length > 30) {
+                    val t = text.substring(0, 30)
+                    projectEdittext.setText(t)
+                    projectEdittext.setSelection(t.length)
+                    projectEdittext.error = "Character limit exceeded (30 max)."
+                    t
                 } else {
-
-                    // Trim the input to 30 characters
-                    val trimmedText = newText.substring(0, 30)
-                    binding.projectEdittext.setText(trimmedText)
-                    // Set the cursor to the end of the trimmed text
-                    binding.projectEdittext.setSelection(trimmedText.length)
-                    binding.projectEdittext.error = "Character limit exceeded (30 characters max)."
+                    projectEdittext.error = null
+                    text
                 }
-
-                onEditTextCompleteListener?.onProjectTitleTextChange(adapterPosition, newText)
+                listener?.onProjectTitleTextChange(absoluteAdapterPosition, trimmed)
+                if (!dataConstraint.isVisible) project.text =
+                    trimmed.ifEmpty { "Project Title" }
             })
 
-            // Set listeners for EditText changes
-            binding.descriptionEditTxt.addTextChangedListener(GenericTextWatcher { newText ->
-
-                onEditTextCompleteListener?.onProjectDescriptionChange(adapterPosition, newText)
+            descriptionEditTxt.addTextChangedListener(tw { text ->
+                listener?.onProjectDescriptionChange(absoluteAdapterPosition, text)
             })
 
+            etLink.addTextChangedListener(tw { text ->
+                listener?.onProjectLinkChange(absoluteAdapterPosition, text)
+            })
 
+            // expand/collapse from chevron or header
+            viewInstitutedetailicn.setOnClickListener { expandOnly(absoluteAdapterPosition) }
+            project.setOnClickListener { expandOnly(absoluteAdapterPosition) }
 
-
-            binding.viewInstitutedetailicn.setOnClickListener {
-                toggleVisibility()
+            // remove
+            removeItem.setOnClickListener {
+                if (absoluteAdapterPosition != RecyclerView.NO_POSITION) {
+                    listener?.onRemoveItem(absoluteAdapterPosition)
+                }
             }
-
-            // Set a click listener on the "titledetailicn" icon
-            binding.removeItem.setOnClickListener {
-                onEditTextCompleteListener?.OnRemoveItem(adapterPosition)
-            }
-
-
-
-        }
-
-        private fun toggleVisibility() {
-            val isDataVisible = binding.dataConstraint.isVisible
-            binding.dataConstraint.isVisible = !isDataVisible
-            binding.project.text = currentList[position].title.ifEmpty { "Project Title" }
-            binding.viewInstitutedetailicn.rotation = if (isDataVisible) 180f else 0f
         }
     }
 
-
-    class DiffCallback : DiffUtil.ItemCallback<Project>() {
-        override fun areItemsTheSame(oldItem: Project, newItem: Project) =
-            oldItem.hashCode() == newItem.hashCode()
-
-        override fun areContentsTheSame(oldItem: Project, newItem: Project) =
-            oldItem == newItem
+    class DiffCallback : DiffUtil.ItemCallback<ProjectModel>() {
+        override fun areItemsTheSame(old: ProjectModel, new: ProjectModel) = old === new
+        override fun areContentsTheSame(old: ProjectModel, new: ProjectModel) = old == new
     }
-
-
-
 }

@@ -105,7 +105,7 @@
                 android:id="@+id/project_recycler_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:visibility="gone"
+                android:visibility="visible"
                 app:layout_constraintBottom_toTopOf="@id/add_more_layout"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -113,87 +113,6 @@
                 tools:itemCount="1"
                 tools:listitem="@layout/project_item" />
 
-            <!-- Project Title -->
-            <TextView
-                android:id="@+id/tv_project_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:drawableStart="@drawable/project_icon"
-                android:drawablePadding="@dimen/_8sdp"
-                android:fontFamily="@font/poppins_regular"
-                android:text="Project Title"
-                android:textColor="@color/black"
-                android:textSize="@dimen/_13sdp"
-                android:layout_marginTop="@dimen/_8sdp" />
-
-            <EditText
-                android:id="@+id/et_project_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/_8sdp"
-                android:background="@drawable/ic_bg_pro"
-                android:hint="Prank Call App"
-                android:paddingVertical="@dimen/_10sdp"
-                android:paddingStart="@dimen/_10sdp"
-                android:textColor="@color/textColor"
-                android:textColorHint="@color/gray_tx_color"
-                android:textSize="@dimen/_12sdp" />
-
-            <!-- Description -->
-            <TextView
-                android:id="@+id/tv_description"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:drawableStart="@drawable/desc_icon"
-                android:drawablePadding="@dimen/_8sdp"
-                android:fontFamily="@font/poppins_regular"
-                android:text="Description"
-                android:textColor="@color/black"
-                android:textSize="@dimen/_13sdp"
-                android:layout_marginTop="@dimen/_16sdp" />
-
-            <EditText
-                android:id="@+id/et_description"
-                android:layout_width="match_parent"
-                android:layout_height="120dp"
-                android:background="@drawable/ic_bg_pro"
-                android:gravity="start|top"
-                android:hint="Enter your text here"
-                android:padding="@dimen/_10sdp"
-                android:textColor="@color/textColor"
-                android:textColorHint="@color/gray_tx_color"
-                android:textSize="@dimen/_12sdp" />
-
-            <!-- Link -->
-            <TextView
-                android:id="@+id/tv_link"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:drawableStart="@drawable/ic_link"
-                android:drawablePadding="@dimen/_8sdp"
-                android:fontFamily="@font/poppins_regular"
-                android:text="Link"
-                android:textColor="@color/black"
-                android:textSize="@dimen/_13sdp"
-                android:layout_marginTop="@dimen/_16sdp" />
-
-            <EditText
-                android:id="@+id/et_link"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/_8sdp"
-                android:background="@drawable/ic_bg_pro"
-                android:hint="Paste your link here"
-                android:inputType="textUri"
-                android:paddingStart="@dimen/_10sdp"
-                android:paddingVertical="@dimen/_10sdp"
-                android:textColor="@color/textColor"
-                android:textColorHint="@color/gray_tx_color"
-                android:textSize="@dimen/_12sdp" />
-
-
-
-            <!-- Add More -->
             <LinearLayout
                 android:id="@+id/add_more_layout"
                 android:layout_width="match_parent"

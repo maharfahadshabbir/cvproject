@@ -13,9 +13,11 @@ import com.example.cvmaker.model.profilemodels.ProfileModelUI
 import com.example.cvmaker.model.profilemodels.profile.UpdateProfileModdel
 import com.example.cvmaker.model.workingmodels.CvModelRequestDb
 import com.example.cvmaker.model.workingmodels.PersonalDetailModel
+import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import java.io.InputStream
 
+@HiltViewModel
 class SharedViewModel : ViewModel() {
 
     companion object{
