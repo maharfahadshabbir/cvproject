@@ -527,13 +527,6 @@ class NewProfileFragment : Fragment() {
                         // save it in db for restoring profile by profile id
                         myViewModel.insertProfileRequest(ProfileDb(0, item.id))
 
-                       /* RetrofitClient.deleteProfile(item.id, onSuccess = {
-                            profileList.removeAt(position)
-                            if (profileList.isEmpty()) {
-                                emptyList.invoke()
-                            }
-
-                        }, onError = {})*/
 
                         withContext(Dispatchers.Main) {
                             updateUi()
