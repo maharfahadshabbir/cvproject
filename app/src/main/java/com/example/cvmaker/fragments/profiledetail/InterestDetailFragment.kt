@@ -46,15 +46,17 @@ class InterestDetailFragment : Fragment() {
         super.onDestroyView()
         onBackPressedCallback?.remove()
         onBackPressedCallback = null
+        adapter = null
     }
+
+    /* -------------------- Back handling -------------------- */
 
     private fun configureBackPress() {
         tryCatch {
             onBackPressedCallback = object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    findNavController().popBackStack()
+                    backPressed()
                 }
-
             }
             onBackPressedCallback?.let {
                 getViewLifecycleOwnerOrNull()?.let { owner ->
@@ -63,6 +65,13 @@ class InterestDetailFragment : Fragment() {
             }
         }
     }
+
+    private fun backPressed() {
+        cleanAndPersistInterests()
+        findNavController().popBackStack()
+    }
+
+    /* -------------------- Init -------------------- */
 
     private fun initListener() {
         setupRecycler()
@@ -81,7 +90,8 @@ class InterestDetailFragment : Fragment() {
             adapter?.setOnEditTextCompleteListener(object : InterestAdapter.OnEditTextCompleteListener {
                 override fun onInterestTextChange(position: Int, text: String) {
                     if (position in sharedViewModel.cvModelRequestDb.interestList.indices) {
-                        sharedViewModel.cvModelRequestDb.interestList[position].interestName = text
+                        sharedViewModel.cvModelRequestDb.interestList[position].interestName =
+                            text.ifBlank { null }
                     }
                 }
 
@@ -96,38 +106,45 @@ class InterestDetailFragment : Fragment() {
         }
     }
 
+    /**
+     * Populate from SharedViewModel:
+     * - Edit existing profile: show existing interestList.
+     * - New profile: if empty, add a single blank row.
+     */
     private fun populateData() {
         tryCatch {
             val list = sharedViewModel.cvModelRequestDb.interestList
             if (list.isEmpty()) {
                 list.add(InterestModel())
             }
-            adapter?.submitList(list.toList()) // force DiffUtil update
+            adapter?.submitList(list.toList())
         }
     }
 
+    /* -------------------- Clicks -------------------- */
+
     private fun clickListener() {
-        binding.backButton.setOnClickListener { findNavController().popBackStack() }
+        binding.backButton.setOnClickListener { backPressed() }
 
         binding.addMoreInterest.setOnClickListener { addNewInterestItem() }
 
         binding.btnSave.setOnClickListener {
-            val valid = sharedViewModel.cvModelRequestDb.interestList
-                .any { it.interestName?.isNotBlank() == true }
+            // Clean + validate
+            val cleaned = sharedViewModel.cvModelRequestDb.interestList
+                .map { it.copy(interestName = it.interestName?.trim()) }
+                .filter { !it.interestName.isNullOrBlank() }
+                .toMutableList()
 
-            if (!valid) {
-                Toast.makeText(context, "Please add at least one valid interest", Toast.LENGTH_SHORT).show()
+            if (cleaned.isEmpty()) {
+                Toast.makeText(
+                    context,
+                    "Please add at least one valid interest",
+                    Toast.LENGTH_SHORT
+                ).show()
                 return@setOnClickListener
             }
 
-            // ✅ Save to in-memory DB (CvModelRequestDb)
-            val cleanList = sharedViewModel.cvModelRequestDb.interestList
-                .filter { !it.interestName.isNullOrBlank() }
-                .map { InterestModel(it.interestName!!.trim()) }
-                .toMutableList()
-
-            sharedViewModel.cvModelRequestDb.interestList = cleanList
-
+            sharedViewModel.cvModelRequestDb.interestList = cleaned
             showToastSafe("Interests saved successfully!")
             findNavController().popBackStack()
         }
@@ -136,17 +153,23 @@ class InterestDetailFragment : Fragment() {
     private fun addNewInterestItem() {
         tryCatch {
             val list = sharedViewModel.cvModelRequestDb.interestList
-            val allFilled = list.all { it.interestName?.isNotBlank() == true }
+            val allFilled = list.all { !it.interestName.isNullOrBlank() }
 
             if (allFilled) {
                 list.add(InterestModel())
                 adapter?.submitList(list.toList())
                 binding.interestRecyclerView.scrollToPosition(list.size - 1)
             } else {
-                Toast.makeText(context, "Please fill existing interest first", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    "Please fill existing interest first",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
+
+    /* -------------------- Remove item -------------------- */
 
     private fun showRemoveItemBottomSheet(position: Int) {
         val removeSheet = RemoveItemBottomSheet {
@@ -161,14 +184,41 @@ class InterestDetailFragment : Fragment() {
             if (position in list.indices) {
                 val updated = list.toMutableList()
                 updated.removeAt(position)
+
+                if (updated.isEmpty()) {
+                    // keep one empty row instead of closing screen
+                    updated.add(InterestModel())
+                }
+
                 sharedViewModel.cvModelRequestDb.interestList = updated
                 adapter?.submitList(updated.toList())
-                if (updated.isEmpty()) findNavController().popBackStack()
+                binding.interestRecyclerView.scrollToPosition(updated.lastIndex)
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
+
+    /* -------------------- Cleanup helper -------------------- */
+
+    private fun cleanAndPersistInterests() {
+        tryCatch {
+            val list = sharedViewModel.cvModelRequestDb.interestList
+            val cleaned = list
+                .map { it.copy(interestName = it.interestName?.trim()) }
+                .filter { !it.interestName.isNullOrBlank() }
+                .toMutableList()
+
+            if (cleaned.isEmpty()) {
+                cleaned.add(InterestModel())
+            }
+
+            sharedViewModel.cvModelRequestDb.interestList = cleaned
+            adapter?.submitList(cleaned.toList())
+        }
+    }
+
+    /* -------------------- Keyboard padding -------------------- */
 
     private fun handleKeyboard(view: View) {
         view.viewTreeObserver.addOnGlobalLayoutListener {

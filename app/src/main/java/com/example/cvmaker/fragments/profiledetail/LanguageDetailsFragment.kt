@@ -61,11 +61,13 @@ class LanguageDetailsFragment : Fragment() {
         _binding = null
     }
 
+    /* -------------------- Back handling -------------------- */
+
     private fun configureBackPress() {
         tryCatch {
             onBackPressedCallback = object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    findNavController().popBackStack()
+                    backPressed()
                 }
             }
             onBackPressedCallback?.let { cb ->
@@ -76,6 +78,13 @@ class LanguageDetailsFragment : Fragment() {
         }
     }
 
+    private fun backPressed() {
+        cleanAndPersistLanguages()
+        findNavController().popBackStack()
+    }
+
+    /* -------------------- Recycler / Adapter -------------------- */
+
     private fun setupRecycler() {
         adapter = LanguageAdapter()
         binding.languageRecyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -85,7 +94,7 @@ class LanguageDetailsFragment : Fragment() {
             override fun onLanguageTextChange(position: Int, text: String) {
                 val list = sharedViewModel.cvModelRequestDb.languageList
                 if (position in list.indices) {
-                    list[position].languageName = text
+                    list[position].languageName = text.ifBlank { null }
                 }
             }
 
@@ -115,26 +124,38 @@ class LanguageDetailsFragment : Fragment() {
         })
     }
 
+    /**
+     * Populate from SharedViewModel:
+     * - Edit existing profile: use existing languageList.
+     * - New profile: if empty, add a single blank row with default level.
+     */
     private fun populateData() {
         val list = sharedViewModel.cvModelRequestDb.languageList
         if (list.isEmpty()) {
             list.add(LanguageModel(languageName = "", level = "Novice"))
         }
-        // Expand the last item by default
         adapter?.submitList(list.toList())
         adapter?.expandOnly(list.lastIndex)
     }
 
+    /* -------------------- Clicks -------------------- */
+
     private fun setupClicks() {
-        binding.backButton.setOnClickListener { findNavController().popBackStack() }
+        binding.backButton.setOnClickListener { backPressed() }
 
         binding.addMoreLanguage.setOnClickListener {
             val list = sharedViewModel.cvModelRequestDb.languageList
 
             // Allow add only if all existing rows have a name + level
-            val allFilled = list.all { !(it.languageName.isNullOrBlank()) && !(it.level.isNullOrBlank()) }
+            val allFilled = list.all {
+                !it.languageName.isNullOrBlank() && !it.level.isNullOrBlank()
+            }
             if (!allFilled) {
-                Toast.makeText(requireContext(), "Please fill the current language first", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Please fill the current language first",
+                    Toast.LENGTH_SHORT
+                ).show()
                 return@setOnClickListener
             }
 
@@ -151,11 +172,20 @@ class LanguageDetailsFragment : Fragment() {
 
             val cleaned = list
                 .filter { !it.languageName.isNullOrBlank() }
-                .map { it.copy(languageName = it.languageName!!.trim(), level = (it.level ?: "Novice")) }
+                .map {
+                    it.copy(
+                        languageName = it.languageName!!.trim(),
+                        level = (it.level ?: "Novice")
+                    )
+                }
                 .toMutableList()
 
             if (cleaned.isEmpty()) {
-                Toast.makeText(requireContext(), "Please add at least one language", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Please add at least one language",
+                    Toast.LENGTH_SHORT
+                ).show()
                 return@setOnClickListener
             }
 
@@ -165,6 +195,8 @@ class LanguageDetailsFragment : Fragment() {
             findNavController().popBackStack()
         }
     }
+
+    /* -------------------- Remove item -------------------- */
 
     private fun showRemoveItemBottomSheet(position: Int) {
         val remove = RemoveItemBottomSheet {
@@ -187,14 +219,41 @@ class LanguageDetailsFragment : Fragment() {
 
                 sharedViewModel.cvModelRequestDb.languageList = updated
                 adapter?.submitList(updated.toList())
-
-                // Keep accordion tidy: expand last row after removal
                 adapter?.expandOnly(updated.lastIndex)
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
+
+    /* -------------------- Cleanup on back -------------------- */
+
+    private fun cleanAndPersistLanguages() {
+        tryCatch {
+            val list = sharedViewModel.cvModelRequestDb.languageList
+
+            val cleaned = list
+                .map {
+                    it.copy(
+                        languageName = it.languageName?.trim(),
+                        level = it.level ?: "Novice"
+                    )
+                }
+                .filter { !it.languageName.isNullOrBlank() }
+                .toMutableList()
+
+            // If everything got removed, keep one empty row for when user returns
+            if (cleaned.isEmpty()) {
+                cleaned.add(LanguageModel(languageName = "", level = "Novice"))
+            }
+
+            sharedViewModel.cvModelRequestDb.languageList = cleaned
+            adapter?.submitList(cleaned.toList())
+            adapter?.expandOnly(cleaned.lastIndex)
+        }
+    }
+
+    /* -------------------- Keyboard padding -------------------- */
 
     private fun handleKeyboard(root: View) {
         root.viewTreeObserver.addOnGlobalLayoutListener {

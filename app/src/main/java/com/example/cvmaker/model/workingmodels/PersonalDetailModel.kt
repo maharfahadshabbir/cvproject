@@ -11,6 +11,9 @@ data class PersonalDetailModel(
     var passport: String? = null,
     var nationality: String? = null,
     var gender: String? = null,
-    var maritalStatus: String? = null
+    var maritalStatus: String? = null,
+
+    var imageUri: String? = null
+
 )
 

@@ -6,10 +6,13 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.Response
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class CvMakerRepository(
-    private val gson: Gson = Gson()
-) {
+@Singleton
+class CvMakerRepository @Inject constructor() {
+
+    private val gson = Gson()
     private val api = CvMakerService.api()
 
     suspend fun generateCv(
@@ -21,7 +24,9 @@ class CvMakerRepository(
             val res: Response<Any> = api.generateCv(body)
 
             if (!res.isSuccessful) {
-                return@withContext GenerateCvResult.Error("HTTP ${res.code()}: ${res.errorBody()?.string()?.take(400)}")
+                return@withContext GenerateCvResult.Error(
+                    "HTTP ${res.code()}: ${res.errorBody()?.string()?.take(400)}"
+                )
             }
 
             val rawObj = gson.toJsonTree(res.body())?.asJsonObject ?: JsonObject()
@@ -33,7 +38,9 @@ class CvMakerRepository(
                 val url = rawObj["download_url_pdf"]?.asString.orEmpty()
                 return@withContext if (url.isNotBlank()) {
                     GenerateCvResult.Single(url)
-                } else GenerateCvResult.Error("Missing download_url_pdf")
+                } else {
+                    GenerateCvResult.Error("Missing download_url_pdf")
+                }
             }
 
             // All-templates shape
@@ -46,7 +53,9 @@ class CvMakerRepository(
                 }
                 return@withContext if (list.isNotEmpty()) {
                     GenerateCvResult.Multiple(list)
-                } else GenerateCvResult.Error("No generated files")
+                } else {
+                    GenerateCvResult.Error("No generated files")
+                }
             }
 
             GenerateCvResult.Error("Unknown response shape")

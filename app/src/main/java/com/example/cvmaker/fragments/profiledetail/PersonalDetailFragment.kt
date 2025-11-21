@@ -39,6 +39,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import androidx.core.net.toUri
 
 class PersonalDetailFragment : Fragment() {
 
@@ -76,6 +77,7 @@ class PersonalDetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        ensurePersonalModel()
         setupBackPress()
         setupKeyboardResize()
         setupClicks()
@@ -87,6 +89,17 @@ class PersonalDetailFragment : Fragment() {
     // ------------------------------------------------------------
     // 🖱️ CLICKS
     // ------------------------------------------------------------
+
+    private fun ensurePersonalModel(): PersonalDetailModel {
+        val existing = sharedViewModel.cvModelRequestDb.personalDetails
+        if (existing != null) return existing
+
+        val newModel = PersonalDetailModel()
+        sharedViewModel.cvModelRequestDb.personalDetails = newModel
+        return newModel
+    }
+
+
     private fun setupClicks() = with(binding) {
         backButton.setOnClickListener { findNavController().popBackStack() }
         previewCv.setOnClickListener { previewCv() }
@@ -170,11 +183,13 @@ class PersonalDetailFragment : Fragment() {
         cameraLauncher.launch(intent)
     }
 
+    // CAMERA RESULT
     private fun handleCameraPhoto() {
         photoFile?.let { file ->
             lifecycleScope.launch(Dispatchers.IO) {
                 val bitmap = fixImageRotation(file)
-                saveBitmapToViewModel(bitmap)
+                // ✅ pass photoUri so we can store it
+                saveBitmapToViewModel(bitmap, photoUri)
                 withContext(Dispatchers.Main) {
                     Glide.with(requireContext()).load(bitmap).into(binding.profilePhoto)
                 }
@@ -182,22 +197,29 @@ class PersonalDetailFragment : Fragment() {
         }
     }
 
+    // GALLERY RESULT
     private fun handleGalleryImage(uri: Uri) {
         lifecycleScope.launch(Dispatchers.IO) {
             val bitmap = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, uri)
-            saveBitmapToViewModel(bitmap)
+            // ✅ pass gallery uri so we can store it
+            saveBitmapToViewModel(bitmap, uri)
             withContext(Dispatchers.Main) {
                 Glide.with(requireContext()).load(uri).into(binding.profilePhoto)
             }
         }
     }
 
-    private suspend fun saveBitmapToViewModel(bitmap: Bitmap) {
+    private suspend fun saveBitmapToViewModel(bitmap: Bitmap, sourceUri: Uri?) {
         val baos = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos)
         byteArray = baos.toByteArray()
+
         sharedViewModel.selectedimageasFile = photoFile
-        sharedViewModel.selectedimageUri = photoUri
+        sharedViewModel.selectedimageUri = sourceUri
+
+        // 🔥 Save into PersonalDetailModel so it goes into CvModelRequestDb → Room
+        val model = ensurePersonalModel()
+        model.imageUri = sourceUri?.toString()
     }
 
     private fun fixImageRotation(file: File): Bitmap {
@@ -257,11 +279,40 @@ class PersonalDetailFragment : Fragment() {
     // 🔤 TEXT WATCHERS
     // ------------------------------------------------------------
     private fun setupTextWatchers() = with(binding) {
-        nameEdittext.addTextChangedListener { sharedViewModel.cvModel.first_name = it.toString() }
-        emailEdittext.addTextChangedListener { sharedViewModel.cvModel.cv_email = it.toString() }
-        phoneEdittext.addTextChangedListener { sharedViewModel.cvModel.phone = it.toString() }
-        addressEdittext.addTextChangedListener { sharedViewModel.cvModel.address = it.toString() }
+        nameEdittext.addTextChangedListener {
+            val model = ensurePersonalModel()
+            model.name = it?.toString()
+        }
+        emailEdittext.addTextChangedListener {
+            val model = ensurePersonalModel()
+            model.email = it?.toString()
+        }
+        phoneEdittext.addTextChangedListener {
+            val model = ensurePersonalModel()
+            model.phone = it?.toString()
+        }
+        addressEdittext.addTextChangedListener {
+            val model = ensurePersonalModel()
+            model.address = it?.toString()
+        }
+        etPhone2.addTextChangedListener {
+            val model = ensurePersonalModel()
+            model.phone2 = it?.toString()
+        }
+        etIdcard.addTextChangedListener {
+            val model = ensurePersonalModel()
+            model.idCard = it?.toString()
+        }
+        etPassport.addTextChangedListener {
+            val model = ensurePersonalModel()
+            model.passport = it?.toString()
+        }
+        etNationality.addTextChangedListener {
+            val model = ensurePersonalModel()
+            model.nationality = it?.toString()
+        }
     }
+
 
     // ------------------------------------------------------------
     // 🔙 BACK HANDLING
@@ -279,28 +330,63 @@ class PersonalDetailFragment : Fragment() {
     // 🧠 RESTORE DATA
     // ------------------------------------------------------------
     private fun populateExistingData() = with(binding) {
-        sharedViewModel.cvModel.let {
-            nameEdittext.setText(it.first_name)
-            emailEdittext.setText(it.cv_email)
-            phoneEdittext.setText(it.phone)
-            addressEdittext.setText(it.address)
-            etDob.setText(it.date_of_birth)
+        // ✅ Prefer new DB model
+        sharedViewModel.cvModelRequestDb.personalDetails?.let { model ->
+            nameEdittext.setText(model.name)
+            emailEdittext.setText(model.email)
+            phoneEdittext.setText(model.phone)
+            addressEdittext.setText(model.address)
+            etDob.setText(model.dateOfBirth)
+            etPhone2.setText(model.phone2)
+            etIdcard.setText(model.idCard)
+            etPassport.setText(model.passport)
+            etNationality.setText(model.nationality)
 
-            when (it.gender) {
+            when (model.gender) {
                 "Male" -> rbMale.isChecked = true
                 "Female" -> rbFemale.isChecked = true
                 "Other" -> rbOther.isChecked = true
             }
 
-            when (it.marital_status) {
+            when (model.maritalStatus) {
                 "Married" -> rbMarried.isChecked = true
                 "Unmarried" -> rbUnmarried.isChecked = true
             }
-        }
-        sharedViewModel.selectedimageUri?.let {
-            Glide.with(requireContext()).load(it).into(binding.profilePhoto)
+
+            // 🔥 Load image from saved imageUri if available
+            model.imageUri?.let { saved ->
+                val uri = saved.toUri()
+                Glide.with(requireContext()).load(uri).into(profilePhoto)
+            }
+        } ?: run {
+            // 🔁 Fallback to old cvModel (if any old data still there)
+            sharedViewModel.cvModel.let {
+                nameEdittext.setText(it.first_name)
+                emailEdittext.setText(it.cv_email)
+                phoneEdittext.setText(it.phone)
+                addressEdittext.setText(it.address)
+                etDob.setText(it.date_of_birth)
+
+                when (it.gender) {
+                    "Male" -> rbMale.isChecked = true
+                    "Female" -> rbFemale.isChecked = true
+                    "Other" -> rbOther.isChecked = true
+                }
+
+                when (it.marital_status) {
+                    "Married" -> rbMarried.isChecked = true
+                    "Unmarried" -> rbUnmarried.isChecked = true
+                }
+            }
+
+            // If not in new model but still in VM (old behavior)
+            sharedViewModel.selectedimageUri?.let {
+                Glide.with(requireContext()).load(it).into(profilePhoto)
+            }
         }
     }
+
+
 
     override fun onDestroyView() {
         super.onDestroyView()
@@ -339,6 +425,11 @@ class PersonalDetailFragment : Fragment() {
             return
         }
 
+        // keep existing image if already set
+        val existingImageUri =
+            sharedViewModel.cvModelRequestDb.personalDetails?.imageUri
+                ?: sharedViewModel.selectedimageUri?.toString()
+
         val model = PersonalDetailModel(
             name = name,
             email = email,
@@ -350,7 +441,8 @@ class PersonalDetailFragment : Fragment() {
             passport = passport,
             nationality = nationality,
             gender = gender,
-            maritalStatus = maritalStatus
+            maritalStatus = maritalStatus,
+            imageUri = existingImageUri
         )
 
         sharedViewModel.cvModelRequestDb.personalDetails = model
@@ -358,5 +450,6 @@ class PersonalDetailFragment : Fragment() {
         findNavController().navigateUp()
         Toast.makeText(requireContext(), "Personal details saved!", Toast.LENGTH_SHORT).show()
     }
+
 
 }

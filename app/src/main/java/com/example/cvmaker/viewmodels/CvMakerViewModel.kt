@@ -1,12 +1,9 @@
 package com.example.cvmaker.viewmodels
 
-import com.example.cvmaker.data.api.GenerateCvResult
-
-
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cvmaker.data.api.CvMakerRepository
+import com.example.cvmaker.data.api.GenerateCvResult
 import com.example.cvmaker.model.workingmodels.CvModelRequestDb
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,8 +12,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class CvMakerViewModel  @Inject constructor(
-    private val repo: CvMakerRepository = CvMakerRepository()
+class CvMakerViewModel @Inject constructor(
+    private val repo: CvMakerRepository   // ✅ no default, Hilt provides this
 ) : ViewModel() {
 
     sealed class UiState {

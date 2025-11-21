@@ -32,9 +32,10 @@ class ProjectDetailsFragment : Fragment() {
     private var onBackPressedCallback: OnBackPressedCallback? = null
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View {
-        binding = FragmentProjectDetailsBinding.inflate(layoutInflater)
+        binding = FragmentProjectDetailsBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -61,7 +62,12 @@ class ProjectDetailsFragment : Fragment() {
                     keypadHeight
                 )
             } else {
-                // keep at 0 – your existing code already handles reset if needed
+                binding.scrollView.setPadding(
+                    binding.scrollView.paddingLeft,
+                    binding.scrollView.paddingTop,
+                    binding.scrollView.paddingRight,
+                    0
+                )
             }
         }
     }
@@ -86,25 +92,31 @@ class ProjectDetailsFragment : Fragment() {
             override fun onProjectTitleTextChange(position: Int, text: String) {
                 updateModel(position) { it.projectTitle = text.ifBlank { null } }
             }
+
             override fun onProjectDescriptionChange(position: Int, text: String) {
                 updateModel(position) { it.description = text.ifBlank { null } }
             }
+
             override fun onProjectLinkChange(position: Int, text: String) {
                 updateModel(position) { it.link = text.ifBlank { null } }
             }
+
             override fun requestNewFocus(editText: EditText) {
                 editText.requestFocus()
             }
+
             override fun onRemoveItem(position: Int) {
                 showRemoveItemBottomSheet(position)
             }
         })
     }
 
-    /* -------------------- Data flow -------------------- */
+    /* -------------------- Data flow (Edit-ready) -------------------- */
 
     private fun populateFromDb() = tryCatch {
         val db = sharedViewModel.cvModelRequestDb.projectList
+        // Edit case: if list already has items, show them.
+        // New case: ensure at least one empty row.
         if (db.isEmpty()) db.add(ProjectModel())
         adapter?.submitList(db.toList())
         adapter?.expandOnly(db.lastIndex.coerceAtLeast(0))
@@ -126,6 +138,12 @@ class ProjectDetailsFragment : Fragment() {
             // hook your preview if needed
         }
 
+        // ✅ SAVE button: clean list, persist into cvModelRequestDb, then navigate back
+        btnSave.setOnClickListener {
+            saveProjects()
+        }
+
+        // This "next" button you already had – can keep or remove depending on flow
         expnextbtn.setOnClickListener {
             if (!validateFields()) {
                 Toast.makeText(
@@ -139,6 +157,58 @@ class ProjectDetailsFragment : Fragment() {
         }
     }
 
+    /* -------------------- Save logic -------------------- */
+
+    private fun saveProjects() = tryCatch {
+        val currentList = sharedViewModel.cvModelRequestDb.projectList
+
+        // 1) If nothing at all, just keep one empty row and warn
+        if (currentList.isEmpty() || currentList.all { isEmpty(it) }) {
+            sharedViewModel.cvModelRequestDb.projectList = mutableListOf(ProjectModel())
+            adapter?.submitList(sharedViewModel.cvModelRequestDb.projectList.toList())
+            Toast.makeText(requireContext(), "No project added yet.", Toast.LENGTH_SHORT).show()
+            return@tryCatch
+        }
+
+        // 2) Keep only fully valid rows (title + description), trim values
+        val cleaned = currentList
+            .filter { isComplete(it) }
+            .map {
+                ProjectModel(
+                    projectTitle = it.projectTitle?.trim(),
+                    description = it.description?.trim(),
+                    link = it.link?.trim()?.takeIf { link -> link.isNotEmpty() }
+                )
+            }
+            .toMutableList()
+
+        if (cleaned.isEmpty()) {
+            // User typed something but nothing complete
+            sharedViewModel.cvModelRequestDb.projectList = mutableListOf(ProjectModel())
+            adapter?.submitList(sharedViewModel.cvModelRequestDb.projectList.toList())
+            Toast.makeText(
+                requireContext(),
+                "Please complete at least one project (title & description).",
+                Toast.LENGTH_SHORT
+            ).show()
+            return@tryCatch
+        }
+
+        // 3) Persist cleaned list into CvModelRequestDb
+        sharedViewModel.cvModelRequestDb.projectList = cleaned
+
+        // 4) Update adapter UI
+        adapter?.submitList(cleaned.toList())
+        adapter?.expandOnly(cleaned.lastIndex)
+
+        // 5) Here is where you would call your Room/DB save for the whole CvModelRequestDb:
+        //    e.g. sharedViewModel.saveCurrentProfileToDb()
+        //    (implement that in SharedViewModel / another ViewModel)
+
+        Toast.makeText(requireContext(), getString(R.string.saved), Toast.LENGTH_SHORT).show()
+        findNavController().popBackStack()
+    }
+
     /* -------------------- Add / Remove -------------------- */
 
     private fun addNewProjectItem() = tryCatch {
@@ -150,7 +220,11 @@ class ProjectDetailsFragment : Fragment() {
             binding.projectRecyclerView.scrollToPosition(newIndex)
             adapter?.expandOnly(newIndex) // close previous, open new
         } else {
-            Toast.makeText(requireContext(), "Input fields are empty", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                requireContext(),
+                "Please complete current project first",
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
@@ -166,8 +240,8 @@ class ProjectDetailsFragment : Fragment() {
         db.removeAt(position)
 
         if (db.isEmpty()) {
-            findNavController().popBackStack()
-            return@tryCatch
+            // If the user removed everything, keep one empty row so they can add again
+            db.add(ProjectModel())
         }
 
         binding.scrollView.isEnabled = false
@@ -187,8 +261,19 @@ class ProjectDetailsFragment : Fragment() {
         val ok = list.all { m ->
             val title = m.projectTitle?.trim().orEmpty()
             val desc = m.description?.trim().orEmpty()
-            title.isNotEmpty() && desc.isNotEmpty()
-            // link is optional; if you want to require a valid URL, add a regex check here
+            // require filled only for non-empty projects
+            if (isEmpty(m)) {
+                true
+            } else {
+                title.isNotEmpty() && desc.isNotEmpty()
+            }
+        }
+        if (!ok) {
+            Toast.makeText(
+                requireContext(),
+                "Please complete project title and description.",
+                Toast.LENGTH_SHORT
+            ).show()
         }
         return ok
     }
@@ -218,9 +303,13 @@ class ProjectDetailsFragment : Fragment() {
         val complete = db.filter { isComplete(it) }.toMutableList()
         val partialCount = db.count { !isEmpty(it) && !isComplete(it) }
 
-        sharedViewModel.cvModelRequestDb.projectList = complete
+        // If nothing is fully complete but user typed something,
+        // keep one empty row instead of leaving the list empty.
+        sharedViewModel.cvModelRequestDb.projectList =
+            if (complete.isEmpty()) mutableListOf(ProjectModel()) else complete
 
-        adapter?.submitList(complete.toList())
+        adapter?.submitList(sharedViewModel.cvModelRequestDb.projectList.toList())
+
         if (partialCount > 0) {
             Toast.makeText(
                 requireContext(),
@@ -228,7 +317,9 @@ class ProjectDetailsFragment : Fragment() {
                 Toast.LENGTH_SHORT
             ).show()
         }
-        if (complete.isNotEmpty()) adapter?.expandOnly(complete.lastIndex)
+
+        val lastIndex = sharedViewModel.cvModelRequestDb.projectList.lastIndex
+        if (lastIndex >= 0) adapter?.expandOnly(lastIndex)
     }
 
     private fun isComplete(m: ProjectModel): Boolean {

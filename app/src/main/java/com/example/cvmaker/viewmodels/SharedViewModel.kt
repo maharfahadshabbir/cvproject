@@ -16,23 +16,35 @@ import com.example.cvmaker.model.workingmodels.PersonalDetailModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import java.io.InputStream
+import javax.inject.Inject   // ✅ add this
 
 @HiltViewModel
-class SharedViewModel : ViewModel() {
+class SharedViewModel @Inject constructor() : ViewModel() {   // ✅ Hilt constructor
 
-    companion object{
-        var selectedProfile: ProfileModelUI?  = null
+    companion object {
+        var selectedProfile: ProfileModelUI? = null
     }
-
 
     //working
     var cvModelRequestDb = CvModelRequestDb()
 
+    // ✅ New flags for edit / create mode
+    var isEditingProfile: Boolean = false
+    var editingProfileEntityId: Long? = null
+
+    fun startNewProfile() {
+        isEditingProfile = false
+        editingProfileEntityId = null
+        cvModelRequestDb = CvModelRequestDb()  // fresh data
+    }
+
+    fun startEditProfile(entityId: Long, data: CvModelRequestDb) {
+        isEditingProfile = true
+        editingProfileEntityId = entityId
+        cvModelRequestDb = data
+    }
 
     val personalDetailsList = mutableListOf<PersonalDetailModel>()
-
-
-
 
     //working//
     var popUp30percent: Boolean = false
@@ -56,23 +68,22 @@ class SharedViewModel : ViewModel() {
     var profileCount: Int = 0
     var selectedDocumentUri: Uri? = null
     var templateString: String = ""
-    var title:String = ""
-    fun setTitle( string: String, string1: String){
-         title = string
-         templateString = string1
-
+    var title: String = ""
+    fun setTitle(string: String, string1: String) {
+        title = string
+        templateString = string1
     }
+
     var setString: String = ""
 
     var globalDialog: Dialog? = null
-    private var cvId: Long = -1 // Initialize with a default value
-    private var cvIdforEdits: Long = -1 // Initialize with a default value
+    private var cvId: Long = -1
+    private var cvIdforEdits: Long = -1
     var selectedimageasFile: File? = null
     var selectedimageUri: Uri? = null
-    var imageasBitmap:Bitmap? =null
+    var imageasBitmap: Bitmap? = null
 
-    var pdfStream: InputStream? =null
-
+    var pdfStream: InputStream? = null
 
     //Api related
     var editcv: Int = -1
@@ -88,33 +99,23 @@ class SharedViewModel : ViewModel() {
 
     var cancel_click = false
 
-
-
-    //
-
     var cvTypeList1: List<CvType> = emptyList()
     var cvTypeList2: List<CvType> = emptyList()
     var cvTypeList3: List<CvType> = emptyList()
 
-
-    fun setList(position:Int,list:List<CvType>){
-
-        when(position){
-            0->{
+    fun setList(position: Int, list: List<CvType>) {
+        when (position) {
+            0 -> {
                 cvTypeList1 = list
             }
-            1->{
+            1 -> {
                 cvTypeList2 = list
-
             }
-            2->{
+            2 -> {
                 cvTypeList3 = list
-
             }
         }
     }
-
-
 
     private val _isNativeAdVisible = MutableLiveData<Boolean>(true)
     val isNativeAdVisible: LiveData<Boolean> get() = _isNativeAdVisible
@@ -123,14 +124,9 @@ class SharedViewModel : ViewModel() {
         _isNativeAdVisible.value = isVisible
     }
 
-
-    // MutableLiveData that holds a Boolean value
     private val _isFeatureEnabled = MutableLiveData<Boolean>()
-
-    // Expose an immutable LiveData for observers
     val isFeatureEnabled: LiveData<Boolean> get() = _isFeatureEnabled
 
-    // Function to update the value
     fun setFeatureEnabled(enabled: Boolean) {
         _isFeatureEnabled.value = enabled
     }

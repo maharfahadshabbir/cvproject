@@ -62,13 +62,18 @@ class ExperienceDetailFragment : Fragment() {
         removeIncompleteItems()
         onBackPressedCallback?.remove()
         onBackPressedCallback = null
+        adapter = null
     }
+
+    /* -------------------- UI -------------------- */
 
     private fun initUi() = tryCatch {
         binding.experienceRecyclerView.visibility = View.VISIBLE
         binding.experienceContainer.visibility = View.GONE
         binding.previewCv.isVisible = checkProfileCase(sharedViewModel)
     }
+
+    /* -------------------- Adapter -------------------- */
 
     private fun initAdapter() = tryCatch {
         context?.let { ctx ->
@@ -149,6 +154,13 @@ class ExperienceDetailFragment : Fragment() {
         }
     }
 
+    /* -------------------- DB -> UI -------------------- */
+
+    /**
+     * Populate from SharedViewModel:
+     * - Edit existing profile: show existing experienceList.
+     * - New profile: if empty, add a single blank row.
+     */
     private fun populateFromDb() = tryCatch {
         val dbList = sharedViewModel.cvModelRequestDb.experienceList
         if (dbList.isEmpty()) dbList.add(ExperienceModel())
@@ -156,19 +168,55 @@ class ExperienceDetailFragment : Fragment() {
         adapter?.expandOnly(dbList.lastIndex.coerceAtLeast(0))
     }
 
+    /* -------------------- Clicks -------------------- */
+
     private fun initClicks() = tryCatch {
         binding.backButton.setOnClickListener { backPressed() }
         binding.addMoreExperience.setOnClickListener { addMoreExperienceItem() }
-        binding.previewCv.setOnClickListener { /* preview */ }
+        binding.previewCv.setOnClickListener { /* preview if needed */ }
+
         binding.btnSave.setOnClickListener {
-            if (!validateFields()) return@setOnClickListener
+            val list = sharedViewModel.cvModelRequestDb.experienceList
+
+            // Trim and keep only complete rows for saving
+            val cleaned = list
+                .map {
+                    it.copy(
+                        companyName = it.companyName?.trim(),
+                        designation = it.designation?.trim(),
+                        detail = it.detail?.trim(),
+                        startDate = it.startDate?.trim(),
+                        endDate = it.endDate?.trim(),
+                        isCurrentWorking = it.isCurrentWorking
+                    )
+                }
+                .filter { isModelComplete(it) }
+                .toMutableList()
+
+            if (cleaned.isEmpty()) {
+                Toast.makeText(
+                    requireContext(),
+                    "Please add at least one work experience.",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@setOnClickListener
+            }
+
+            // Save cleaned list back to VM
+            sharedViewModel.cvModelRequestDb.experienceList = cleaned
+
+            // Validate dates on cleaned list
             if (!validateDates()) return@setOnClickListener
+
             findNavController().navigateUp()
             Toast.makeText(requireContext(), getString(R.string.saved), Toast.LENGTH_SHORT).show()
         }
     }
 
+    /* -------------------- Add / Remove -------------------- */
+
     private fun addMoreExperienceItem() = tryCatch {
+        // Only allow new row if existing ones are complete & dates valid
         if (validateFields() && validateDates()) {
             val db = sharedViewModel.cvModelRequestDb.experienceList
             db.add(ExperienceModel())
@@ -187,33 +235,40 @@ class ExperienceDetailFragment : Fragment() {
     private fun removeItemFromDb(position: Int) = tryCatch {
         val db = sharedViewModel.cvModelRequestDb.experienceList
         if (position !in db.indices) return@tryCatch
-        db.removeAt(position)
-        if (db.isEmpty()) { findNavController().popBackStack(); return@tryCatch }
+
+        val updated = db.toMutableList()
+        updated.removeAt(position)
+
+        if (updated.isEmpty()) {
+            // Keep one empty row so user isn’t stuck
+            updated.add(ExperienceModel())
+        }
+
+        sharedViewModel.cvModelRequestDb.experienceList = updated
 
         binding.scrollExperience.isEnabled = false
         binding.scrollExperience.clearFocus()
 
-        adapter?.submitList(db.toList())
-        adapter?.expandOnly(position.coerceAtMost(db.lastIndex))
+        adapter?.submitList(updated.toList())
+        adapter?.expandOnly(updated.lastIndex.coerceAtLeast(0))
 
         binding.scrollExperience.post { binding.scrollExperience.isEnabled = true }
     }
 
+    /* -------------------- Validation -------------------- */
+
+    /**
+     * Used for "add more" – requires all existing rows to be complete before adding another.
+     */
     private fun validateFields(): Boolean {
         val list = sharedViewModel.cvModelRequestDb.experienceList
-        val ok = list.all { m ->
-            val company = m.companyName?.trim().orEmpty()
-            val desig = m.designation?.trim().orEmpty()
-            val start = m.startDate?.trim()
-            val end = m.endDate?.trim()
-            company.isNotEmpty() &&
-                    desig.isNotEmpty() &&
-                    !start.isNullOrEmpty() &&
-                    (!end.isNullOrEmpty() || m.isCurrentWorking) &&
-                    (m.detail?.trim().orEmpty().isNotEmpty())
-        }
+        val ok = list.all { m -> isModelComplete(m) }
         if (!ok) {
-            Toast.makeText(requireContext(), "Please fill all fields before proceeding.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                requireContext(),
+                "Please fill all fields before adding another experience.",
+                Toast.LENGTH_SHORT
+            ).show()
         }
         return ok
     }
@@ -221,34 +276,53 @@ class ExperienceDetailFragment : Fragment() {
     private fun validateDates(): Boolean {
         val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         for (m in sharedViewModel.cvModelRequestDb.experienceList) {
-            val start = m.startDate; val end = m.endDate
+            val start = m.startDate
+            val end = m.endDate
             if (!start.isNullOrEmpty() && !end.isNullOrEmpty() && !m.isCurrentWorking) {
                 try {
-                    val s: Date? = fmt.parse(start); val e: Date? = fmt.parse(end)
+                    val s: Date? = fmt.parse(start)
+                    val e: Date? = fmt.parse(end)
                     if (s != null && e != null && e.before(s)) {
-                        Toast.makeText(requireContext(),"End date cannot be before the start date.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            requireContext(),
+                            "End date cannot be before the start date.",
+                            Toast.LENGTH_SHORT
+                        ).show()
                         return false
                     }
-                } catch (_: Exception) { return false }
+                } catch (_: Exception) {
+                    return false
+                }
             }
         }
         return true
     }
 
+    /* -------------------- Cleanup on back/destroy -------------------- */
+
     private fun removeIncompleteItems() = tryCatch {
         val db = sharedViewModel.cvModelRequestDb.experienceList
-        val original = db.size
-        if (original == 0) return@tryCatch
+        if (db.isEmpty()) return@tryCatch
 
         val complete = db.filter { isModelComplete(it) }.toMutableList()
         val partialCount = db.count { !isModelEmpty(it) && !isModelComplete(it) }
-        sharedViewModel.cvModelRequestDb.experienceList = complete
 
-        if (partialCount > 0) {
-            Toast.makeText(requireContext(),"Removed $partialCount partially filled experience item(s)", Toast.LENGTH_SHORT).show()
+        if (complete.isEmpty()) {
+            // Keep one empty row so screen stays usable when reopened
+            complete.add(ExperienceModel())
         }
+
+        sharedViewModel.cvModelRequestDb.experienceList = complete
         adapter?.submitList(complete.toList())
         if (complete.isNotEmpty()) adapter?.expandOnly(complete.lastIndex)
+
+        if (partialCount > 0) {
+            Toast.makeText(
+                requireContext(),
+                "Removed $partialCount partially filled experience item(s)",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     private fun isModelComplete(m: ExperienceModel): Boolean {
@@ -269,6 +343,8 @@ class ExperienceDetailFragment : Fragment() {
                 && !m.isCurrentWorking
                 && m.detail.isNullOrBlank())
     }
+
+    /* -------------------- Helpers -------------------- */
 
     private inline fun updateModel(index: Int, update: (ExperienceModel) -> Unit) {
         val db = sharedViewModel.cvModelRequestDb.experienceList

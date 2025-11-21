@@ -45,7 +45,7 @@ class CertificationDetailsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         configureBackPress()
         setupRecycler()
-        populateData()
+        populateData()          // 🔥 shows existing certifications for edit, or one empty row for new
         setupClicks()
         handleKeyboard(view)
 
@@ -60,13 +60,15 @@ class CertificationDetailsFragment : Fragment() {
         _binding = null
     }
 
+    // -------------------------------------------------------------------------
+    // 🔙 BACK PRESS
+    // -------------------------------------------------------------------------
     private fun configureBackPress() {
         tryCatch {
             onBackPressedCallback = object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
                     findNavController().popBackStack()
                 }
-
             }
             onBackPressedCallback?.let { cb ->
                 getViewLifecycleOwnerOrNull()?.let { owner ->
@@ -76,6 +78,9 @@ class CertificationDetailsFragment : Fragment() {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // ♻ RECYCLER + ADAPTER
+    // -------------------------------------------------------------------------
     private fun setupRecycler() {
         adapter = CertificationAdapter()
         binding.certificationRecyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -129,8 +134,14 @@ class CertificationDetailsFragment : Fragment() {
         })
     }
 
+    /**
+     * Populate from SharedViewModel:
+     * - Edit existing profile: use whatever is already in certificationList.
+     * - New profile: if empty, add a single blank certification row.
+     */
     private fun populateData() {
         val list = sharedViewModel.cvModelRequestDb.certificationList
+
         if (list.isEmpty()) {
             list.add(
                 CertificationModel(
@@ -144,24 +155,31 @@ class CertificationDetailsFragment : Fragment() {
                 )
             )
         }
+
         adapter?.submitList(list.toList())
         adapter?.expandOnly(list.lastIndex)
     }
 
+    // -------------------------------------------------------------------------
+    // 🖱 CLICKS
+    // -------------------------------------------------------------------------
     private fun setupClicks() {
         binding.backButton.setOnClickListener { findNavController().popBackStack() }
 
         binding.addMoreCert.setOnClickListener {
             val list = sharedViewModel.cvModelRequestDb.certificationList
 
-            // Ensure current rows are minimally filled before adding new
+            // Require current rows to be minimally filled before adding new
             val allFilled = list.all { !(it.course.isNullOrBlank()) && !(it.institute.isNullOrBlank()) }
             if (!allFilled) {
-                Toast.makeText(requireContext(), "Please fill the current certification first", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Please fill the current certification first",
+                    Toast.LENGTH_SHORT
+                ).show()
                 return@setOnClickListener
             }
 
-            // Add and expand the new row
             list.add(
                 CertificationModel(
                     course = "",
@@ -180,37 +198,58 @@ class CertificationDetailsFragment : Fragment() {
         }
 
         binding.btnSave.setOnClickListener {
-            val list = sharedViewModel.cvModelRequestDb.certificationList
-
-            // Clean up and drop blank rows
-            val cleaned = list
-                .map {
-                    it.copy(
-                        course = it.course?.trim(),
-                        institute = it.institute?.trim(),
-                        grade = it.grade?.trim(),
-                        startDate = it.startDate?.trim(),
-                        endDate = (if (it.isCurrentStudent) "" else it.endDate?.trim()),
-                        expanded = false
-                    )
-                }
-                .filter { !(it.course.isNullOrBlank() && it.institute.isNullOrBlank() && it.grade.isNullOrBlank()
-                        && it.startDate.isNullOrBlank() && it.endDate.isNullOrBlank()) }
-                .toMutableList()
-
-            if (cleaned.isEmpty()) {
-                Toast.makeText(requireContext(), "Please add at least one certification", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            sharedViewModel.cvModelRequestDb.certificationList = cleaned
-            showToastSafe("Certifications saved successfully!")
-            findNavController().popBackStack()
+            saveAndExit()
         }
     }
 
+    // -------------------------------------------------------------------------
+    // 💾 SAVE + EXIT
+    // -------------------------------------------------------------------------
+    private fun saveAndExit() {
+        val list = sharedViewModel.cvModelRequestDb.certificationList
+
+        // Trim and drop fully blank rows
+        val cleaned = list
+            .map {
+                it.copy(
+                    course = it.course?.trim(),
+                    institute = it.institute?.trim(),
+                    grade = it.grade?.trim(),
+                    startDate = it.startDate?.trim(),
+                    endDate = (if (it.isCurrentStudent) "" else it.endDate?.trim()),
+                    expanded = false
+                )
+            }
+            .filter {
+                !(it.course.isNullOrBlank()
+                        && it.institute.isNullOrBlank()
+                        && it.grade.isNullOrBlank()
+                        && it.startDate.isNullOrBlank()
+                        && it.endDate.isNullOrBlank())
+            }
+            .toMutableList()
+
+        if (cleaned.isEmpty()) {
+            Toast.makeText(
+                requireContext(),
+                "Please add at least one certification",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        // 🔥 Save back to the shared ViewModel so the whole profile (including edits) persists
+        sharedViewModel.cvModelRequestDb.certificationList = cleaned
+
+        showToastSafe("Certifications saved successfully!")
+        findNavController().popBackStack()
+    }
+
+    // -------------------------------------------------------------------------
+    // ❌ REMOVE ITEM
+    // -------------------------------------------------------------------------
     private fun showRemoveItemBottomSheet(position: Int) {
-        val bottomSheet = com.example.cvmaker.fragments.profiledetail.util.bottomsheets.RemoveItemBottomSheet {
+        val bottomSheet = RemoveItemBottomSheet {
             removeItem(position)
         }
         bottomSheet.show(parentFragmentManager, "RemoveCertificationBottomSheet")
@@ -247,6 +286,9 @@ class CertificationDetailsFragment : Fragment() {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // ⌨️ KEYBOARD HANDLING
+    // -------------------------------------------------------------------------
     private fun handleKeyboard(root: View) {
         root.viewTreeObserver.addOnGlobalLayoutListener {
             val r = Rect()

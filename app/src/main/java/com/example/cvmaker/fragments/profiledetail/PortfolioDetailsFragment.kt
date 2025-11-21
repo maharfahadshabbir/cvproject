@@ -7,11 +7,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import com.example.cvmaker.databinding.FragmentPortfolioDetailsBinding
+import com.example.cvmaker.fragments.profiledetail.util.ViewUtils.checkProfileCase
 import com.example.cvmaker.model.workingmodels.PortfolioModel
 import com.example.cvmaker.utils.getViewLifecycleOwnerOrNull
 import com.example.cvmaker.utils.showToastSafe
@@ -42,6 +44,8 @@ class PortfolioDetailsFragment : Fragment() {
         setupLiveSync()
         setupClicks()
         handleKeyboard(view)
+
+        binding.previewCv.isVisible = checkProfileCase(sharedViewModel)
     }
 
     override fun onDestroyView() {
@@ -51,11 +55,13 @@ class PortfolioDetailsFragment : Fragment() {
         _binding = null
     }
 
+    // -------------------- Back handling --------------------
+
     private fun configureBackPress() {
         tryCatch {
             onBackPressedCallback = object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    findNavController().popBackStack()
+                    backPressed()
                 }
             }
             onBackPressedCallback?.let { cb ->
@@ -66,7 +72,13 @@ class PortfolioDetailsFragment : Fragment() {
         }
     }
 
-    /** Read existing portfolio (index 0 of portfolioList) and fill inputs */
+    private fun backPressed() {
+        persistPortfolio(showToast = false)
+        findNavController().popBackStack()
+    }
+
+    // -------------------- Populate for edit --------------------
+
     private fun populateData() {
         val list = sharedViewModel.cvModelRequestDb.portfolioList
         val current = list.firstOrNull() ?: PortfolioModel()
@@ -78,35 +90,57 @@ class PortfolioDetailsFragment : Fragment() {
         binding.etWebsiteLink.setText(current.websiteLink.orEmpty())
     }
 
-    /** Two-way live sync: update view-model as user types (still save on button too) */
+    // -------------------- Live sync while typing --------------------
+
     private fun setupLiveSync() {
-        binding.etGithub.doAfterTextChanged { updateLocal { it.github = it.textOrNull(binding.etGithub) } }
-        binding.etDribbble.doAfterTextChanged { updateLocal { it.dribble = it.textOrNull(binding.etDribbble) } }
-        binding.etBehance.doAfterTextChanged { updateLocal { it.behance = it.textOrNull(binding.etBehance) } }
-        binding.etWebsiteName.doAfterTextChanged { updateLocal { it.websiteName = it.textOrNull(binding.etWebsiteName) } }
-        binding.etWebsiteLink.doAfterTextChanged { updateLocal { it.websiteLink = it.textOrNull(binding.etWebsiteLink) } }
-    }
-
-    private fun setupClicks() {
-        binding.backButton.setOnClickListener { findNavController().popBackStack() }
-
-        binding.btnSave.setOnClickListener {
-            saveToDb()
+        binding.etGithub.doAfterTextChanged {
+            updateLocal { m -> m.github = binding.etGithub.textOrNull() }
+        }
+        binding.etDribbble.doAfterTextChanged {
+            updateLocal { m -> m.dribble = binding.etDribbble.textOrNull() }
+        }
+        binding.etBehance.doAfterTextChanged {
+            updateLocal { m -> m.behance = binding.etBehance.textOrNull() }
+        }
+        binding.etWebsiteName.doAfterTextChanged {
+            updateLocal { m -> m.websiteName = binding.etWebsiteName.textOrNull() }
+        }
+        binding.etWebsiteLink.doAfterTextChanged {
+            updateLocal { m -> m.websiteLink = binding.etWebsiteLink.textOrNull() }
         }
     }
 
-    private fun saveToDb() {
+    private fun setupClicks() {
+        binding.backButton.setOnClickListener { backPressed() }
+
+        binding.btnSave.setOnClickListener {
+            persistPortfolio(showToast = true)
+        }
+    }
+
+    // -------------------- Persist helpers --------------------
+
+    private fun persistPortfolio(showToast: Boolean) {
         val github = binding.etGithub.text?.toString()?.trim().orEmpty()
         val dribbble = binding.etDribbble.text?.toString()?.trim().orEmpty()
         val behance = binding.etBehance.text?.toString()?.trim().orEmpty()
         val websiteName = binding.etWebsiteName.text?.toString()?.trim().orEmpty()
         val websiteLink = binding.etWebsiteLink.text?.toString()?.trim().orEmpty()
 
-        // If absolutely everything is blank, allow but warn user
-        val allBlank = github.isBlank() && dribbble.isBlank() && behance.isBlank() &&
-                websiteName.isBlank() && websiteLink.isBlank()
+        val allBlank = github.isBlank() &&
+                dribbble.isBlank() &&
+                behance.isBlank() &&
+                websiteName.isBlank() &&
+                websiteLink.isBlank()
+
+        val list = sharedViewModel.cvModelRequestDb.portfolioList
+
         if (allBlank) {
-            Toast.makeText(requireContext(), "No portfolio links added", Toast.LENGTH_SHORT).show()
+            list.clear()
+            if (showToast) {
+                Toast.makeText(requireContext(), "No portfolio links added", Toast.LENGTH_SHORT).show()
+            }
+            return
         }
 
         val model = PortfolioModel(
@@ -117,31 +151,40 @@ class PortfolioDetailsFragment : Fragment() {
             websiteLink = websiteLink.nullIfBlank()
         )
 
-        // Keep only one record at index 0
-        val list = sharedViewModel.cvModelRequestDb.portfolioList
         if (list.isEmpty()) list.add(model) else list[0] = model
 
-        showToastSafe("Portfolio saved")
-        findNavController().popBackStack()
+        if (showToast) {
+            showToastSafe("Portfolio saved")
+            findNavController().popBackStack()
+        }
     }
+
+    // -------------------- Keyboard padding (FIXED) --------------------
 
     private fun handleKeyboard(root: View) {
         root.viewTreeObserver.addOnGlobalLayoutListener {
+            // ❗ Use _binding safely, avoid calling `binding` when view is destroyed
+            val b = _binding ?: return@addOnGlobalLayoutListener
+
             val r = Rect()
             root.getWindowVisibleDisplayFrame(r)
             val screenHeight = root.rootView.height
             val keypadHeight = screenHeight - r.bottom
 
-            binding.scrollPortfolio.setPadding(
-                binding.scrollPortfolio.paddingLeft,
-                binding.scrollPortfolio.paddingTop,
-                binding.scrollPortfolio.paddingRight,
+            val bottomPadding =
                 if (keypadHeight > screenHeight * 0.15) keypadHeight else 0
+
+            b.scrollPortfolio.setPadding(
+                b.scrollPortfolio.paddingLeft,
+                b.scrollPortfolio.paddingTop,
+                b.scrollPortfolio.paddingRight,
+                bottomPadding
             )
         }
     }
 
-    /** Helper: mutate the single PortfolioModel at index 0 as user types */
+    // -------------------- Local update helpers --------------------
+
     private fun updateLocal(mutate: (PortfolioModel) -> Unit) {
         val list = sharedViewModel.cvModelRequestDb.portfolioList
         if (list.isEmpty()) list.add(PortfolioModel())
@@ -149,10 +192,10 @@ class PortfolioDetailsFragment : Fragment() {
         mutate(current)
     }
 
-    private fun PortfolioModel.textOrNull(input: android.widget.EditText): String? {
-        val t = input.text?.toString()?.trim().orEmpty()
+    private fun android.widget.EditText.textOrNull(): String? {
+        val t = text?.toString()?.trim().orEmpty()
         return t.nullIfBlank()
     }
 
-    private fun String.nullIfBlank(): String? = if (isBlank()) null else this
+    private fun String.nullIfBlank(): String? = ifBlank { null }
 }

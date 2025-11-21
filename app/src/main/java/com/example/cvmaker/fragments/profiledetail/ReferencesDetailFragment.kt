@@ -25,8 +25,6 @@ import com.example.cvmaker.viewmodels.SharedViewModel
 class ReferencesDetailFragment : Fragment() {
 
     private lateinit var binding: FragmentReferencesDetailBinding
-
-    // If you later want to show the list, this adapter already supports ReferenceModel.
     private lateinit var adapter: ReferencesAdapter
 
     private val sharedViewModel by activityViewModels<SharedViewModel>()
@@ -37,7 +35,8 @@ class ReferencesDetailFragment : Fragment() {
     private var onBackPressedCallback: OnBackPressedCallback? = null
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View {
         binding = FragmentReferencesDetailBinding.inflate(inflater, container, false)
         configureBackPress()
@@ -75,6 +74,7 @@ class ReferencesDetailFragment : Fragment() {
     }
 
     private fun backPressed() {
+        // On back, just leave list as-is (user may be in the middle of editing)
         findNavController().popBackStack()
     }
 
@@ -93,8 +93,6 @@ class ReferencesDetailFragment : Fragment() {
                     binding.scrollReferences.paddingRight,
                     keypadHeight
                 )
-            } else {
-                // no-op: keep default padding
             }
         }
     }
@@ -118,9 +116,7 @@ class ReferencesDetailFragment : Fragment() {
         etRefEmail.setText(item.email.orEmpty())
         etRefDesignation.setText(item.designation.orEmpty())
         etRefCompany.setText(item.companyName.orEmpty())
-        // Clear inline errors
 
-        // Focus name if empty
         if (item.name.isNullOrEmpty()) etRefName.requestFocus()
     }
 
@@ -144,30 +140,36 @@ class ReferencesDetailFragment : Fragment() {
 
         etRefEmail.addTextChangedListener { s ->
             val text = s?.toString()?.trim().orEmpty()
-            currentItem().email = text.ifBlank { null }
 
-            // simple inline validation + length cap 34 like your adapter
             if (text.isEmpty()) {
-//                emailErrorText.text = null
-            } else {
-                val trimmed = text.substring(0, 34)
+                currentItem().email = null
+                return@addTextChangedListener
+            }
+
+            // cap length at 34 like adapter
+            val trimmed = text.take(34)
+            if (trimmed != text) {
                 etRefEmail.setText(trimmed)
                 etRefEmail.setSelection(trimmed.length)
-                currentItem().email = trimmed
             }
+            currentItem().email = trimmed
         }
 
         etRefPhone.addTextChangedListener { s ->
             val text = s?.toString()?.trim().orEmpty()
-            currentItem().phone = text.ifBlank { null }
 
             if (text.isEmpty()) {
-//                do nothing
-            } else if (text.length > 14) {
-                val trimmed = text.substring(0, 14)
+                currentItem().phone = null
+                return@addTextChangedListener
+            }
+
+            if (text.length > 14) {
+                val trimmed = text.take(14)
                 etRefPhone.setText(trimmed)
                 etRefPhone.setSelection(trimmed.length)
                 currentItem().phone = trimmed
+            } else {
+                currentItem().phone = text
             }
         }
     }
@@ -177,27 +179,33 @@ class ReferencesDetailFragment : Fragment() {
     private fun setupClicks() = with(binding) {
         backButton.setOnClickListener { backPressed() }
 
-        // Preview optional:
-        // previewCv.setOnClickListener { previewCv(sharedViewModel, R.id.fragmentPreviewApi) }
-
         addMoreReferences.setOnClickListener {
             // 1) Validate current before moving on
             if (!validateCurrent()) return@setOnClickListener
-            // 2) "Close" previous (we already bound it to list)
-            // 3) Add new item, move index, bind fresh UI
+
+            // 2) Add new item, move index, bind fresh UI
             val list = sharedViewModel.cvModelRequestDb.referenceList
             list.add(ReferenceModel())
             currentIndex = list.lastIndex
             bindCurrentItemToViews()
         }
 
-        binding.btnSave.setOnClickListener {
-            // Save = validate all
+        btnSave.setOnClickListener {
+            // Validate all non-empty references
             if (!validateAll()) return@setOnClickListener
-            // Everything is already in ViewModel list; navigate or show success
+
+            // Drop fully empty references before saving
+            val list = sharedViewModel.cvModelRequestDb.referenceList
+            val cleaned = list.filter { !isEmpty(it) }.toMutableList()
+
+            if (cleaned.isEmpty()) {
+                showToastSafe("Please add at least one reference.")
+                return@setOnClickListener
+            }
+
+            sharedViewModel.cvModelRequestDb.referenceList = cleaned
             showToastSafe(getString(R.string.saved_successfully))
-            // Navigate if needed:
-            // findNavController().navigate(R.id.customHomeFragment)
+            findNavController().popBackStack()
         }
     }
 
@@ -206,11 +214,13 @@ class ReferencesDetailFragment : Fragment() {
     private fun validateCurrent(): Boolean {
         val item = currentItem()
 
-        // Email + phone required
+        // if user hasn't entered anything at all, let them move on
+        if (isEmpty(item)) return true
+
         val email = item.email?.trim().orEmpty()
         val phone = item.phone?.trim().orEmpty()
 
-        // inline errors
+        // email required & valid
         if (email.isEmpty()) {
             binding.etRefEmail.requestFocus()
             return false
@@ -219,6 +229,8 @@ class ReferencesDetailFragment : Fragment() {
             binding.etRefEmail.requestFocus()
             return false
         }
+
+        // phone required & basic validation
         if (phone.isEmpty()) {
             binding.etRefPhone.requestFocus()
             return false
@@ -234,7 +246,6 @@ class ReferencesDetailFragment : Fragment() {
             showToastSafe(getString(R.string.dublicate_email_founded))
             return false
         }
-        // passed
 
         return true
     }
@@ -242,34 +253,41 @@ class ReferencesDetailFragment : Fragment() {
     private fun validateAll(): Boolean {
         val list = sharedViewModel.cvModelRequestDb.referenceList
 
-        // At least one
-        if (list.isEmpty()) {
+        // At least one non-empty reference
+        val hasNonEmpty = list.any { !isEmpty(it) }
+        if (!hasNonEmpty) {
+            showToastSafe("Please add at least one reference.")
             return false
         }
 
-        // Email + phone with simple validation on each
+        // Validate only non-empty items
         list.forEachIndexed { index, ref ->
+            if (isEmpty(ref)) return@forEachIndexed
+
             val email = ref.email?.trim().orEmpty()
             val phone = ref.phone?.trim().orEmpty()
 
             if (email.isEmpty() || !email.matches(ViewUtils.emailPattern.toRegex())) {
                 currentIndex = index
                 bindCurrentItemToViews()
-
                 binding.etRefEmail.requestFocus()
                 return false
             }
+
             if (phone.isEmpty() || !"^[+]?[0-9]{1,14}$".toRegex().matches(phone)) {
                 currentIndex = index
                 bindCurrentItemToViews()
-
                 binding.etRefPhone.requestFocus()
                 return false
             }
         }
 
-        // Duplicate emails across all
-        val emails = list.mapNotNull { it.email?.trim()?.lowercase() }.filter { it.isNotEmpty() }
+        // Duplicate emails across all non-empty entries
+        val emails = list
+            .filter { !isEmpty(it) }
+            .mapNotNull { it.email?.trim()?.lowercase() }
+            .filter { it.isNotEmpty() }
+
         if (emails.size != emails.toSet().size) {
             showToastSafe(getString(R.string.dublicate_email_founded))
             return false
@@ -287,10 +305,17 @@ class ReferencesDetailFragment : Fragment() {
         return false
     }
 
+    private fun isEmpty(ref: ReferenceModel): Boolean {
+        return ref.name.isNullOrBlank() &&
+                ref.designation.isNullOrBlank() &&
+                ref.companyName.isNullOrBlank() &&
+                ref.email.isNullOrBlank() &&
+                ref.phone.isNullOrBlank()
+    }
+
     /* ---------------- Optional list (kept wired for later) ---------------- */
 
     private fun setupOptionalRecycler() = with(binding) {
-        // If/when you decide to show the list; currently RecyclerView is GONE in XML
         referencesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         adapter = ReferencesAdapter()
         referencesRecyclerView.adapter = adapter
@@ -323,14 +348,16 @@ class ReferencesDetailFragment : Fragment() {
 
             override fun onEmailTextChange(position: Int, text: String) {
                 if (position in sharedViewModel.cvModelRequestDb.referenceList.indices) {
-                    // prevent duplicates here too
-                    val dup = sharedViewModel.cvModelRequestDb.referenceList
+                    val list = sharedViewModel.cvModelRequestDb.referenceList
+                    val dup = list
                         .mapIndexed { i, r -> i to (r.email?.trim().orEmpty()) }
                         .any { (i, e) -> i != position && e.equals(text, true) && e.isNotEmpty() }
-                    ViewUtils.error = if (dup) getString(R.string.dublicate_email_founded) else ""
+
+                    ViewUtils.error =
+                        if (dup) getString(R.string.dublicate_email_founded) else ""
+
                     if (!dup) {
-                        sharedViewModel.cvModelRequestDb.referenceList[position].email =
-                            text.ifBlank { null }
+                        list[position].email = text.ifBlank { null }
                     }
                 }
             }
@@ -347,16 +374,18 @@ class ReferencesDetailFragment : Fragment() {
             }
 
             override fun onRemoveItem(position: Int, itemRemoved: () -> Unit) {
-                // Optional remove handler if you unhide the list UI
-                if (position in sharedViewModel.cvModelRequestDb.referenceList.indices) {
-                    sharedViewModel.cvModelRequestDb.referenceList.removeAt(position)
-                    adapter.submitList(sharedViewModel.cvModelRequestDb.referenceList.toList())
+                val list = sharedViewModel.cvModelRequestDb.referenceList
+                if (position in list.indices) {
+                    list.removeAt(position)
+                    adapter.submitList(list.toList())
                     itemRemoved.invoke()
-                    // If currentIndex is now out-of-range, pull it back
-                    if (currentIndex !in sharedViewModel.cvModelRequestDb.referenceList.indices) {
-                        currentIndex =
-                            (sharedViewModel.cvModelRequestDb.referenceList.lastIndex).coerceAtLeast(0)
-                        ensureListHasAtLeastOne()
+
+                    // If currentIndex is now out-of-range, fix it
+                    if (currentIndex !in list.indices) {
+                        if (list.isEmpty()) {
+                            list.add(ReferenceModel())
+                        }
+                        currentIndex = list.lastIndex
                         bindCurrentItemToViews()
                     }
                 }

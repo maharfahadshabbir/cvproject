@@ -21,6 +21,7 @@ import com.example.cvmaker.fragments.profiledetail.util.ViewUtils.checkProfileCa
 import com.example.cvmaker.fragments.profiledetail.util.bottomsheets.RemoveItemBottomSheet
 import com.example.cvmaker.model.workingmodels.SkillsModel
 import com.example.cvmaker.utils.getViewLifecycleOwnerOrNull
+import com.example.cvmaker.utils.showToastSafe
 import com.example.cvmaker.utils.tryCatch
 import com.example.cvmaker.viewmodels.SharedViewModel
 
@@ -70,6 +71,7 @@ class SkillsDetailsFragment : Fragment() {
     /* -------------------- Back press -------------------- */
 
     private fun backPressed() {
+        // On back: clean partials, keep only complete skills
         removeIncompleteItems()
         findNavController().popBackStack()
     }
@@ -111,7 +113,7 @@ class SkillsDetailsFragment : Fragment() {
 
     private fun initListener() {
         tryCatch {
-            // we show RecyclerView and hide the static single block
+            // Use list-based UI; hide any static single-skill block if present
             binding.skillRecyclerView.visibility = View.VISIBLE
             binding.skillContainer.visibility = View.GONE
 
@@ -129,16 +131,32 @@ class SkillsDetailsFragment : Fragment() {
             addNewSkillItem()
         }
 
-        // previewCv click left as needed
         previewCv.setOnClickListener {
-            // preview if you need
+            // hook your preview if needed
         }
 
         btnSave.setOnClickListener {
-            if (!validateFields()) return@setOnClickListener
-            // All changes are already in cvModelRequestDb.skillsList
+            // On save, keep only complete skills; require at least one
+            val db = sharedViewModel.cvModelRequestDb.skillsList
+
+            val cleaned = db
+                .filter { !isModelEmpty(it) }      // drop fully blank rows
+                .filter { isModelComplete(it) }    // keep only complete entries
+                .toMutableList()
+
+            if (cleaned.isEmpty()) {
+                Toast.makeText(
+                    requireContext(),
+                    "Please add at least one skill with a name and rating.",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@setOnClickListener
+            }
+
+            sharedViewModel.cvModelRequestDb.skillsList = cleaned
+            adapter?.submitList(cleaned.toList())
+            showToastSafe(getString(R.string.saved))
             findNavController().navigateUp()
-            Toast.makeText(requireContext(), getString(R.string.saved), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -187,7 +205,7 @@ class SkillsDetailsFragment : Fragment() {
     private fun populateFromDb() = tryCatch {
         val db = sharedViewModel.cvModelRequestDb.skillsList
         if (db.isEmpty()) {
-            db.add(SkillsModel()) // seed one
+            db.add(SkillsModel()) // seed one if new profile
         }
         adapter?.submitList(db.toList())
         // expand last one by default
@@ -206,6 +224,7 @@ class SkillsDetailsFragment : Fragment() {
         db.removeAt(position)
 
         if (db.isEmpty()) {
+            // If user removed everything, just go back
             findNavController().popBackStack()
             return@tryCatch
         }
@@ -224,16 +243,25 @@ class SkillsDetailsFragment : Fragment() {
     /* -------------------- Add / Update -------------------- */
 
     private fun addNewSkillItem() = tryCatch {
-        // Add only if current are valid
-        if (validateFields()) {
-            val db = sharedViewModel.cvModelRequestDb.skillsList
-            db.add(SkillsModel()) // default empty; rating 0 until user sets
+        val db = sharedViewModel.cvModelRequestDb.skillsList
 
-            adapter?.submitList(db.toList())
-            val newIndex = db.lastIndex
-            binding.skillRecyclerView.scrollToPosition(newIndex)
-            adapter?.expandOnly(newIndex) // collapse previous, open new
+        // Only allow new row if there is no partially filled item
+        val hasPartial = db.any { !isModelEmpty(it) && !isModelComplete(it) }
+        if (hasPartial) {
+            Toast.makeText(
+                requireContext(),
+                "Please complete the current skill (name and rating) before adding a new one.",
+                Toast.LENGTH_SHORT
+            ).show()
+            return@tryCatch
         }
+
+        db.add(SkillsModel()) // default empty; rating 0 until user sets
+
+        adapter?.submitList(db.toList())
+        val newIndex = db.lastIndex
+        binding.skillRecyclerView.scrollToPosition(newIndex)
+        adapter?.expandOnly(newIndex) // collapse previous, open new
     }
 
     private inline fun updateModel(index: Int, update: (SkillsModel) -> Unit) {
@@ -241,24 +269,7 @@ class SkillsDetailsFragment : Fragment() {
         if (index in db.indices) update(db[index])
     }
 
-    /* -------------------- Validation / Cleanup -------------------- */
-
-    private fun validateFields(): Boolean {
-        val list = sharedViewModel.cvModelRequestDb.skillsList
-        val ok = list.all { m ->
-            val name = m.skillName?.trim().orEmpty()
-            val lvl = m.skillLevel ?: 0
-            name.isNotEmpty() && lvl in 1..5
-        }
-        if (!ok) {
-            Toast.makeText(
-                requireContext(),
-                "Please enter a skill name and select 1–5 stars for each skill.",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-        return ok
-    }
+    /* -------------------- Validation / Cleanup helpers -------------------- */
 
     private fun removeIncompleteItems() = tryCatch {
         val db = sharedViewModel.cvModelRequestDb.skillsList

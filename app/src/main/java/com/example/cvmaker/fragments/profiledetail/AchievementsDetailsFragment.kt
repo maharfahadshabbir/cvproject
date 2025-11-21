@@ -45,7 +45,7 @@ class AchievementsDetailsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         configureBackPress()
         setupRecycler()
-        populateData()
+        populateData()          // 🔥 this will now show existing achievements for edit
         setupClicks()
         handleKeyboard(view)
 
@@ -60,6 +60,9 @@ class AchievementsDetailsFragment : Fragment() {
         _binding = null
     }
 
+    // -------------------------------------------------------------------------
+    // 🔙 BACK PRESS
+    // -------------------------------------------------------------------------
     private fun configureBackPress() {
         tryCatch {
             onBackPressedCallback = object : OnBackPressedCallback(true) {
@@ -75,6 +78,9 @@ class AchievementsDetailsFragment : Fragment() {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // ♻ RECYCLER + ADAPTER
+    // -------------------------------------------------------------------------
     private fun setupRecycler() {
         adapter = AchievementsAdapter()
         binding.achievementRecyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -115,9 +121,12 @@ class AchievementsDetailsFragment : Fragment() {
         })
     }
 
+
     private fun populateData() {
         val list = sharedViewModel.cvModelRequestDb.achievementList
+
         if (list.isEmpty()) {
+            // New profile or no achievements saved yet → add one empty row
             list.add(
                 AchievementModel(
                     title = "",
@@ -127,10 +136,14 @@ class AchievementsDetailsFragment : Fragment() {
                 )
             )
         }
+        // Make an immutable snapshot for the adapter
         adapter?.submitList(list.toList())
         adapter?.expandOnly(list.lastIndex)
     }
 
+    // -------------------------------------------------------------------------
+    // 🖱 CLICKS
+    // -------------------------------------------------------------------------
     private fun setupClicks() {
         binding.backButton.setOnClickListener { findNavController().popBackStack() }
 
@@ -140,7 +153,11 @@ class AchievementsDetailsFragment : Fragment() {
             // Require current row minimally filled before adding a new one
             val allOk = list.all { !(it.title.isNullOrBlank()) }
             if (!allOk) {
-                Toast.makeText(requireContext(), "Please fill the current achievement first", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Please fill the current achievement first",
+                    Toast.LENGTH_SHORT
+                ).show()
                 return@setOnClickListener
             }
 
@@ -161,19 +178,15 @@ class AchievementsDetailsFragment : Fragment() {
         binding.btnSave.setOnClickListener {
             saveAndExit()
         }
-        // In your XML id, the bottom button is "btn_save" (underscore). If your generated binding is `btnSave`,
-        // keep the line above. If it’s `btnSave` to `btn_save` mismatch, just use:
-        // binding.btnSave or binding.btnSave?.setOnClickListener { ... } depending on your view binding names.
-
-        // If your binding generated `btnSave` as `btnSave`:
-        // binding.btnSave.setOnClickListener { saveAndExit() }
-        // If it generated `btn_save` -> it will be `btnSave` in binding by default (camelCase).
     }
 
+    // -------------------------------------------------------------------------
+    // 💾 SAVE + EXIT
+    // -------------------------------------------------------------------------
     private fun saveAndExit() {
         val list = sharedViewModel.cvModelRequestDb.achievementList
 
-        // Trim, drop fully-blank rows
+        // Trim each row and drop fully blank ones
         val cleaned = list
             .map {
                 it.copy(
@@ -190,22 +203,31 @@ class AchievementsDetailsFragment : Fragment() {
             .toMutableList()
 
         if (cleaned.isEmpty()) {
-            Toast.makeText(requireContext(), "Please add at least one achievement", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                requireContext(),
+                "Please add at least one achievement",
+                Toast.LENGTH_SHORT
+            ).show()
             return
         }
 
+        // 🔥 Save back into cvModelRequestDb so the full profile (including edit) persists
         sharedViewModel.cvModelRequestDb.achievementList = cleaned
+
         showToastSafe("Achievements saved successfully!")
         findNavController().popBackStack()
     }
 
+    // -------------------------------------------------------------------------
+    // ❌ REMOVE ITEM
+    // -------------------------------------------------------------------------
     private fun showRemoveItemBottomSheet(position: Int) {
         val bottomSheet = RemoveItemBottomSheet {
             removeItem(position)
         }
         bottomSheet.show(parentFragmentManager, "RemoveAchievementBottomSheet")
     }
- 
+
     private fun removeItem(position: Int) {
         try {
             val list = sharedViewModel.cvModelRequestDb.achievementList
@@ -234,6 +256,9 @@ class AchievementsDetailsFragment : Fragment() {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // ⌨️ KEYBOARD HANDLING
+    // -------------------------------------------------------------------------
     private fun handleKeyboard(root: View) {
         root.viewTreeObserver.addOnGlobalLayoutListener {
             val r = Rect()

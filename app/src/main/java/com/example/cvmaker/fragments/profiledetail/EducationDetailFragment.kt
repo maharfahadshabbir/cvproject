@@ -83,12 +83,12 @@ class EducationDetailFragment : Fragment() {
         super.onDestroyView()
         onBackPressedCallback?.remove()
         onBackPressedCallback = null
+        adapter = null
     }
 
     /* -------------------- UI -------------------- */
 
     private fun initUi() = tryCatch {
-        // Use RecyclerView version; hide the static single block if present in XML
         binding.educationRecyclerView.visibility = View.VISIBLE
         binding.previewCv.isVisible = checkProfileCase(sharedViewModel)
     }
@@ -160,13 +160,28 @@ class EducationDetailFragment : Fragment() {
 
     /* -------------------- DB -> UI -------------------- */
 
+    /**
+     * Populate from SharedViewModel:
+     * - Edit existing profile: show whatever is already in educationList.
+     * - New profile: if list is empty, add a single blank row.
+     */
     private fun populateFromDb() = tryCatch {
         val db = sharedViewModel.cvModelRequestDb.educationList
-        if (db.isEmpty()) db.add(EducationModel())
+        if (db.isEmpty()) {
+            db.add(
+                EducationModel(
+                    institute = "",
+                    course = "",
+                    grade = "",
+                    startDate = null,
+                    endDate = null,
+                    isCurrentStudent = false,
+                    expanded = true
+                )
+            )
+        }
 
-        // Submit copy so DiffUtil can work properly
         adapter?.submitList(db.toList())
-        // expand last one
         adapter?.expandOnly(db.lastIndex.coerceAtLeast(0))
     }
 
@@ -178,14 +193,29 @@ class EducationDetailFragment : Fragment() {
         addMore.setOnClickListener { addNewEducationItem() }
 
         previewCv.setOnClickListener {
-            // hook your preview here if needed
+            // hook preview if needed
         }
 
         addEducation.setOnClickListener {
             if (!validateFields()) return@setOnClickListener
             if (!validateDates()) return@setOnClickListener
-            findNavController().navigateUp()
+
+            // keep only complete rows
+            val db = sharedViewModel.cvModelRequestDb.educationList
+            val complete = db.filter { isComplete(it) }.toMutableList()
+
+            if (complete.isEmpty()) {
+                Toast.makeText(
+                    requireContext(),
+                    "Please add at least one complete education record.",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@setOnClickListener
+            }
+
+            sharedViewModel.cvModelRequestDb.educationList = complete
             Toast.makeText(requireContext(), getString(R.string.saved), Toast.LENGTH_SHORT).show()
+            findNavController().navigateUp()
         }
     }
 
@@ -194,11 +224,21 @@ class EducationDetailFragment : Fragment() {
     private fun addNewEducationItem() = tryCatch {
         if (validateFields() && validateDates()) {
             val db = sharedViewModel.cvModelRequestDb.educationList
-            db.add(EducationModel())
+            db.add(
+                EducationModel(
+                    institute = "",
+                    course = "",
+                    grade = "",
+                    startDate = null,
+                    endDate = null,
+                    isCurrentStudent = false,
+                    expanded = true
+                )
+            )
             adapter?.submitList(db.toList())
             val newIndex = db.lastIndex
             binding.educationRecyclerView.scrollToPosition(newIndex)
-            adapter?.expandOnly(newIndex) // close previous, open new
+            adapter?.expandOnly(newIndex)
         }
     }
 
@@ -211,17 +251,30 @@ class EducationDetailFragment : Fragment() {
         val db = sharedViewModel.cvModelRequestDb.educationList
         if (position !in db.indices) return@tryCatch
 
-        db.removeAt(position)
-        if (db.isEmpty()) {
-            findNavController().popBackStack()
-            return@tryCatch
+        val updated = db.toMutableList()
+        updated.removeAt(position)
+
+        if (updated.isEmpty()) {
+            // keep one empty row instead of leaving user with nothing
+            updated.add(
+                EducationModel(
+                    institute = "",
+                    course = "",
+                    grade = "",
+                    startDate = null,
+                    endDate = null,
+                    isCurrentStudent = false,
+                    expanded = true
+                )
+            )
         }
 
+        sharedViewModel.cvModelRequestDb.educationList = updated
         binding.scrollEducation.isEnabled = false
         binding.scrollEducation.clearFocus()
 
-        adapter?.submitList(db.toList())
-        val expandIndex = position.coerceAtMost(db.lastIndex)
+        adapter?.submitList(updated.toList())
+        val expandIndex = updated.lastIndex.coerceAtLeast(0)
         adapter?.expandOnly(expandIndex)
 
         binding.scrollEducation.post { binding.scrollEducation.isEnabled = true }
@@ -300,7 +353,6 @@ class EducationDetailFragment : Fragment() {
     private fun uiToIso(ui: String?): String? {
         if (ui.isNullOrBlank() || ui.equals(getString(R.string.present), true)) return null
         return try {
-            // normalize single-digit month/day
             val parts = ui.split("/")
             val mm = parts.getOrNull(0)?.padStart(2, '0') ?: return null
             val dd = parts.getOrNull(1)?.padStart(2, '0') ?: return null
@@ -308,7 +360,9 @@ class EducationDetailFragment : Fragment() {
             val normalized = "$mm/$dd/$yy"
             val date = uiFmt.parse(normalized) ?: return null
             isoFmt.format(date)
-        } catch (_: Exception) { null }
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun removeIncompleteEducationItems() = tryCatch {
@@ -318,9 +372,25 @@ class EducationDetailFragment : Fragment() {
         val complete = db.filter { isComplete(it) }.toMutableList()
         val partialCount = db.count { !isEmpty(it) && !isComplete(it) }
 
-        sharedViewModel.cvModelRequestDb.educationList = complete
+        if (complete.isEmpty()) {
+            // if nothing complete, keep a single empty row so screen doesn’t come back broken
+            complete.add(
+                EducationModel(
+                    institute = "",
+                    course = "",
+                    grade = "",
+                    startDate = null,
+                    endDate = null,
+                    isCurrentStudent = false,
+                    expanded = true
+                )
+            )
+        }
 
+        sharedViewModel.cvModelRequestDb.educationList = complete
         adapter?.submitList(complete.toList())
+        adapter?.expandOnly(complete.lastIndex)
+
         if (partialCount > 0) {
             Toast.makeText(
                 requireContext(),
@@ -328,7 +398,6 @@ class EducationDetailFragment : Fragment() {
                 Toast.LENGTH_SHORT
             ).show()
         }
-        if (complete.isNotEmpty()) adapter?.expandOnly(complete.lastIndex)
     }
 
     private fun isComplete(m: EducationModel): Boolean {
