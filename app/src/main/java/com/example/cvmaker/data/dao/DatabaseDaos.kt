@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.example.cvmaker.model.ThumbNailsFavoriteModel
 import com.example.cvmaker.model.profilemodels.FavoriteModel
 import com.example.cvmaker.model.profilemodels.RecycleBin
@@ -66,7 +67,7 @@ interface DatabaseDaos {
     suspend fun deleteRecycleBinRequest()
 
     @Query("DELETE FROM recycle_bin_model_requests WHERE generationId = :generationId")
-    suspend fun deleteById(generationId: Long)
+    suspend fun deleteById(generationId: Long?)
 
     @Query("SELECT EXISTS(SELECT 1 FROM recycle_bin_model_requests LIMIT 1)")
     suspend fun doesRecycleBinExistDb(): Boolean
@@ -83,5 +84,12 @@ interface DatabaseDaos {
 
     @Query("DELETE FROM profile_model_requests WHERE profileId =:profileId")
     suspend fun deleteProfileRequest(profileId: Int)
+
+    @Update
+    suspend fun updateCvModelRequest(entity: CvModelRequestEntity)
+
+
+    @Query("DELETE FROM cv_model_requests WHERE id = :id")
+    suspend fun deleteCvModelRequestById(id: Long)
 
 }

@@ -29,6 +29,14 @@ class MyRepositry @Inject constructor(private val databaseDaos: DatabaseDaos) {
         return  databaseDaos.doesDraftExistDb()
     }
 
+    suspend fun updateCvModelRequest(entity: CvModelRequestEntity) {
+        databaseDaos.updateCvModelRequest(entity)
+    }
+
+    suspend fun deleteCvModelRequestById(id: Long) {
+        databaseDaos.deleteCvModelRequestById(id)
+    }
+
 
 
 
@@ -45,7 +53,7 @@ class MyRepositry @Inject constructor(private val databaseDaos: DatabaseDaos) {
         return  databaseDaos.deleteRecycleBinRequest()
     }
 
-    suspend fun deleteById(id:Long){
+    suspend fun deleteById(id: Long?){
         return  databaseDaos.deleteById(id)
     }
 

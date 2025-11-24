@@ -5,12 +5,16 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.EditText
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.cvmaker.databinding.CertificationItemBinding
 import com.example.cvmaker.model.workingmodels.CertificationModel
+import com.google.android.material.datepicker.MaterialDatePicker
+import java.text.SimpleDateFormat
+import java.util.*
 
 class CertificationAdapter :
     ListAdapter<CertificationModel, CertificationAdapter.ViewHolder>(DiffCallback()) {
@@ -24,13 +28,12 @@ class CertificationAdapter :
         fun onCurrentStudentToggled(position: Int, isChecked: Boolean)
         fun onRemove(position: Int)
         fun requestFocusForNewItem(editText: EditText)
-        fun collapseAllExcept(position: Int) // pass -1 to collapse all
+        fun collapseAllExcept(position: Int) // -1 to collapse all
     }
 
     private var listener: Listener? = null
     fun setListener(l: Listener) { listener = l }
 
-    // Single-expanded accordion behavior
     private var expandedPosition: Int = RecyclerView.NO_POSITION
     fun expandOnly(position: Int) {
         val previous = expandedPosition
@@ -40,8 +43,9 @@ class CertificationAdapter :
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val binding =
-            CertificationItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val binding = CertificationItemBinding.inflate(
+            LayoutInflater.from(parent.context), parent, false
+        )
         return ViewHolder(binding)
     }
 
@@ -55,22 +59,19 @@ class CertificationAdapter :
         private var twCourse: TextWatcher? = null
         private var twInstitute: TextWatcher? = null
         private var twGrade: TextWatcher? = null
-        private var twStart: TextWatcher? = null
-        private var twEnd: TextWatcher? = null
+
+        private val dateFormat = SimpleDateFormat("MM/yy", Locale.getDefault())
 
         fun bind(item: CertificationModel, isExpanded: Boolean) {
-            // Header label
-            val header = when {
-                !item.course.isNullOrBlank() -> item.course
-                else -> "Course / Degree"
-            }
+            // Header text
+            val header = if (item.course.isNullOrBlank()) "Course / Degree" else item.course
             binding.tvCourse.text = header
 
-            // Expand / collapse block
+            // Expand/collapse
             binding.dataConstraint.isVisible = isExpanded
             binding.viewInstitutedetailicn.rotation = if (isExpanded) 180f else 0f
 
-            // Set field values
+            // Set values
             binding.etCourse.setText(item.course.orEmpty())
             binding.etInstitute.setText(item.institute.orEmpty())
             binding.etGrades.setText(item.grade.orEmpty())
@@ -78,20 +79,18 @@ class CertificationAdapter :
             binding.etEndDate.setText(item.endDate.orEmpty())
             binding.cbCurrentStudent.isChecked = item.isCurrentStudent
 
-            // If current student is checked, visually disable End Date
+            // End Date visibility & enabled state
             binding.etEndDate.isEnabled = !item.isCurrentStudent
             binding.etEndDate.alpha = if (item.isCurrentStudent) 0.5f else 1f
 
-            // Clear existing watchers to avoid duplicates on rebind
+            // Remove old watchers
             twCourse?.let { binding.etCourse.removeTextChangedListener(it) }
             twInstitute?.let { binding.etInstitute.removeTextChangedListener(it) }
             twGrade?.let { binding.etGrades.removeTextChangedListener(it) }
-            twStart?.let { binding.etStartDate.removeTextChangedListener(it) }
-            twEnd?.let { binding.etEndDate.removeTextChangedListener(it) }
 
-            // Watchers
+            // Text watchers
             twCourse = makeWatcher { text ->
-                binding.tvCourse.text = if (text.isBlank()) "Course / Degree" else text
+                binding.tvCourse.text = text.ifBlank { "Course / Degree" }
                 listener?.onCourseChanged(adapterPosition, text)
             }.also { binding.etCourse.addTextChangedListener(it) }
 
@@ -103,40 +102,72 @@ class CertificationAdapter :
                 listener?.onGradeChanged(adapterPosition, text)
             }.also { binding.etGrades.addTextChangedListener(it) }
 
-            twStart = makeWatcher { text ->
-                listener?.onStartDateChanged(adapterPosition, text)
-            }.also { binding.etStartDate.addTextChangedListener(it) }
+            // Date Pickers
+            setupDatePicker(binding.etStartDate) { millis ->
+                val formatted = dateFormat.format(Date(millis))
+                binding.etStartDate.setText(formatted)
+                listener?.onStartDateChanged(adapterPosition, formatted)
+            }
 
-            twEnd = makeWatcher { text ->
-                listener?.onEndDateChanged(adapterPosition, text)
-            }.also { binding.etEndDate.addTextChangedListener(it) }
+            setupDatePicker(binding.etEndDate) { millis ->
+                if (!binding.etEndDate.isEnabled) return@setupDatePicker
+                val formatted = dateFormat.format(Date(millis))
+                binding.etEndDate.setText(formatted)
+                listener?.onEndDateChanged(adapterPosition, formatted)
+            }
 
-            // Toggle expanded
+            // Toggle expand/collapse
             binding.viewInstitutedetailicn.setOnClickListener {
                 val target = if (isExpanded) RecyclerView.NO_POSITION else adapterPosition
                 listener?.collapseAllExcept(target)
             }
 
-            // Remove row
+            // Remove item
             binding.removeItem.setOnClickListener {
                 listener?.onRemove(adapterPosition)
             }
 
-            // Focus the new item’s first field if it’s empty and expanded
+            // Auto-focus first field when new empty item is expanded
             if (isExpanded && item.course.isNullOrBlank()) {
                 listener?.requestFocusForNewItem(binding.etCourse)
             }
 
             // Current student checkbox
             binding.cbCurrentStudent.setOnCheckedChangeListener(null)
-            binding.cbCurrentStudent.setOnCheckedChangeListener { _, checked ->
-                // If checked, clear/disable end date
-                if (checked) {
+            binding.cbCurrentStudent.setOnCheckedChangeListener { _, isChecked ->
+                binding.etEndDate.isEnabled = !isChecked
+                binding.etEndDate.alpha = if (isChecked) 0.5f else 1f
+                if (isChecked) {
                     binding.etEndDate.setText("")
+                    listener?.onEndDateChanged(adapterPosition, "")
                 }
-                binding.etEndDate.isEnabled = !checked
-                binding.etEndDate.alpha = if (checked) 0.5f else 1f
-                listener?.onCurrentStudentToggled(adapterPosition, checked)
+                listener?.onCurrentStudentToggled(adapterPosition, isChecked)
+            }
+        }
+
+        private fun setupDatePicker(editText: EditText, onDateSelected: (Long) -> Unit) {
+            val clickListener = {
+                val picker = MaterialDatePicker.Builder.datePicker()
+                    .setTitleText("Select Date")
+                    .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
+                    .build()
+
+                picker.addOnPositiveButtonClickListener { selection ->
+                    onDateSelected(selection)
+                }
+
+                // Safely get FragmentManager
+                val activity = editText.context as? AppCompatActivity
+                activity?.supportFragmentManager?.let {
+                    picker.show(it, "DATE_PICKER_${adapterPosition}")
+                }
+            }
+
+            editText.setOnClickListener { clickListener() }
+            editText.setOnFocusChangeListener { _, hasFocus ->
+                if (hasFocus && editText.isEnabled) {
+                    clickListener()
+                }
             }
         }
 
@@ -150,10 +181,10 @@ class CertificationAdapter :
     }
 
     class DiffCallback : DiffUtil.ItemCallback<CertificationModel>() {
-        override fun areItemsTheSame(oldItem: CertificationModel, newItem: CertificationModel): Boolean =
-            oldItem === newItem
+        override fun areItemsTheSame(old: CertificationModel, new: CertificationModel) =
+            old === new
 
-        override fun areContentsTheSame(oldItem: CertificationModel, newItem: CertificationModel): Boolean =
-            oldItem == newItem
+        override fun areContentsTheSame(old: CertificationModel, new: CertificationModel) =
+            old == new
     }
 }

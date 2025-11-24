@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
@@ -30,6 +31,8 @@ class CertificationDetailsFragment : Fragment() {
 
     private val sharedViewModel by activityViewModels<SharedViewModel>()
 
+    private var globalLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
+
     private var adapter: CertificationAdapter? = null
     private var onBackPressedCallback: OnBackPressedCallback? = null
 
@@ -54,6 +57,9 @@ class CertificationDetailsFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+
+        _binding?.root?.viewTreeObserver?.removeOnGlobalLayoutListener(globalLayoutListener)
+        globalLayoutListener = null
         onBackPressedCallback?.remove()
         onBackPressedCallback = null
         adapter = null
@@ -290,18 +296,30 @@ class CertificationDetailsFragment : Fragment() {
     // ⌨️ KEYBOARD HANDLING
     // -------------------------------------------------------------------------
     private fun handleKeyboard(root: View) {
-        root.viewTreeObserver.addOnGlobalLayoutListener {
-            val r = Rect()
-            root.getWindowVisibleDisplayFrame(r)
-            val screenHeight = root.rootView.height
-            val keypadHeight = screenHeight - r.bottom
+        globalLayoutListener = object : ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                val binding = _binding ?: run {
+                    // If binding is null, remove listener to prevent leaks
+                    root.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                    return
+                }
 
-            binding.scrollCertification.setPadding(
-                binding.scrollCertification.paddingLeft,
-                binding.scrollCertification.paddingTop,
-                binding.scrollCertification.paddingRight,
-                if (keypadHeight > screenHeight * 0.15) keypadHeight else 0
-            )
+                val r = Rect()
+                root.getWindowVisibleDisplayFrame(r)
+                val screenHeight = root.rootView.height
+                val keypadHeight = screenHeight - r.bottom
+
+                val bottomPadding = if (keypadHeight > screenHeight * 0.15) keypadHeight else 0
+
+                binding.scrollCertification.setPadding(
+                    binding.scrollCertification.paddingLeft,
+                    binding.scrollCertification.paddingTop,
+                    binding.scrollCertification.paddingRight,
+                    bottomPadding
+                )
+            }
         }
+
+        root.viewTreeObserver.addOnGlobalLayoutListener(globalLayoutListener)
     }
 }

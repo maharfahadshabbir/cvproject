@@ -181,7 +181,6 @@ class CreateProfileFragment : Fragment() {
                             }
                         }
 
-// ✅ Log the deserialized results
                         deserializedList.forEachIndexed { index, cv ->
                             Log.d("SaveCV", "🧩 CV #$index -> Personal: ${cv.personalDetails?.name}, Education count: ${cv.educationList?.size}")
                         }
@@ -192,6 +191,7 @@ class CreateProfileFragment : Fragment() {
 
                     Toast.makeText(requireContext(), "✅ CV saved successfully!", Toast.LENGTH_SHORT).show()
 
+                    findNavController().popBackStack()
                 } catch (e: Exception) {
                     Log.e("SaveCV", "❌ Exception while saving CV: ${e.localizedMessage}", e)
                     e.printStackTrace()
@@ -205,6 +205,50 @@ class CreateProfileFragment : Fragment() {
                     }
 
                     Toast.makeText(requireContext(), "❌ Failed to save CV. Check logs.", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+
+
+        profile.setOnClickListener {
+            lifecycleScope.launch {
+                try {
+                    val cvModel = sharedViewModel.cvModelRequestDb
+                        ?: return@launch Toast.makeText(requireContext(), "No data", Toast.LENGTH_SHORT).show()
+
+                    val gson = Gson()
+                    val json = gson.toJson(cvModel)
+                    val currentTime = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date())
+
+                    val isUpdate = sharedViewModel.profileCase == "updateProfile"
+                    val existingId = sharedViewModel.editingProfileId
+
+                    val entity = CvModelRequestEntity(
+                        id = if (isUpdate && existingId != null) existingId else 0L, // ← Key!
+                        json = json,
+                        draftName = "CV_${System.currentTimeMillis()}",
+                        profileOrDraft = true,
+                        updateDate = currentTime,
+                        creationDate = if (isUpdate && existingId != null) {
+                            // Keep original creation date? Or fetch from DB
+                            currentTime // or keep old one
+                        } else currentTime,
+                        userId = "user_fixed_id" // Use fixed ID later
+                    )
+
+                    if (isUpdate && existingId != null) {
+                        myViewModel.updateCvModelRequest(entity) // ← You need this!
+                    } else {
+                        myViewModel.insertCvModelRequest(entity)
+                    }
+
+                    Toast.makeText(requireContext(), "CV saved successfully!", Toast.LENGTH_SHORT).show()
+                    sharedViewModel.editingProfileId = null // Reset
+                    findNavController().popBackStack()
+
+                } catch (e: Exception) {
+                    Toast.makeText(requireContext(), "Save failed", Toast.LENGTH_SHORT).show()
+                    Log.e("SaveCV", "Error", e)
                 }
             }
         }

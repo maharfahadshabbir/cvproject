@@ -13,6 +13,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.cvmaker.R
@@ -24,15 +25,17 @@ import com.example.cvmaker.model.workingmodels.CvModelRequestDb
 import com.example.cvmaker.model.workingmodels.CvProfileItem
 import com.example.cvmaker.utils.getViewLifecycleOwnerOrNull
 import com.example.cvmaker.utils.tryCatch
+import com.example.cvmaker.viewmodels.CvMakerViewModel
 import com.example.cvmaker.viewmodels.MyViewModel
+import com.example.cvmaker.viewmodels.NewProfileViewModel
 import com.example.cvmaker.viewmodels.SharedViewModel
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.gson.Gson
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.CoroutineExceptionHandler
 
+@AndroidEntryPoint
 class NewProfileFragment : Fragment() {
 
     private lateinit var binding: FragmentNewProfileBinding
@@ -40,21 +43,19 @@ class NewProfileFragment : Fragment() {
     private val profileAdapter by lazy { NewProfileAdapter() }
 
     private val sharedViewModel by activityViewModels<SharedViewModel>()
-    private val myViewModel by activityViewModels<MyViewModel>()
+    private val cvMakerViewModel by activityViewModels<CvMakerViewModel>()
+    private val myViewModel by activityViewModels<MyViewModel>()   // kept for future delete/rename if you use it
+    private val newProfileViewModel by viewModels<NewProfileViewModel>()
 
     private var lastClickTime = 0L
     private val clickDelay = 500L
 
     private var onBackPressedCallback: OnBackPressedCallback? = null
 
-    private var coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
-        Log.e("NewProfileFragment", "Coroutine error: ${throwable.localizedMessage}", throwable)
-    }
-
-    // Local list for items from DB
+    // Local list for items mapped from DB to UI model
     private val profileItems: MutableList<CvProfileItem> = mutableListOf()
 
-    // Keyboard padding (you already had these flags; kept for consistency)
+    // Keyboard padding flags (kept in case you use them later)
     private var originalRootPaddingBottom: Int = 0
     private var isOriginalPaddingCaptured: Boolean = false
 
@@ -77,6 +78,14 @@ class NewProfileFragment : Fragment() {
 
         setupAddProfileAnimation()
         initListener()
+        loadProfilesFromDb()
+        observeProfiles()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 🔁 Always refresh from DB when we return here (including after save)
+
     }
 
     private fun setupAddProfileAnimation() {
@@ -114,7 +123,6 @@ class NewProfileFragment : Fragment() {
             }
 
             else -> {
-                // default behaviour, you can navigate back if you want:
                 activity?.onBackPressedDispatcher?.onBackPressed()
             }
         }
@@ -139,38 +147,36 @@ class NewProfileFragment : Fragment() {
     // 🔄 INIT & LOAD DATA
     // -------------------------------------------------------------------------
     private fun initListener() {
-        loadProfilesFromDb()
         clickListener()
     }
 
     /**
-     * Fetch data from Room using MyViewModel and convert to CvProfileItem list.
+     * Trigger ViewModel to fetch from Room.
+     * Actual list will come through StateFlow in observeProfiles().
      */
     private fun loadProfilesFromDb() {
-        lifecycleScope.launch(coroutineExceptionHandler) {
-            try {
-                binding.btnProgressBar.isVisible = true
+        binding.btnProgressBar.isVisible = true
+        Log.d("NewProfileFragment", "loadProfilesFromDb: calling VM.loadProfiles()")
+        newProfileViewModel.loadProfiles()
+    }
 
-                val entities = withContext(Dispatchers.IO) {
-                    myViewModel.getCvModelRequest()
-                }
 
-                Log.d("NewProfileFragment", "Fetched ${entities.size} entities from DB")
+    private fun observeProfiles() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            newProfileViewModel.profiles.collectLatest { entities ->
+                Log.d("NewProfileFragment", "Received ${entities.size} profiles")
 
                 val gson = Gson()
                 val items = entities.mapNotNull { entity ->
                     try {
-                        val cv = gson.fromJson(entity?.json, CvModelRequestDb::class.java)
+                        val cv = gson.fromJson(entity.json, CvModelRequestDb::class.java)
                         CvProfileItem(
-                            id = entity?.id,
+                            id = entity.id,
                             data = cv,
-                            updatedAt = entity?.updateDate
+                            updatedAt = entity.updateDate
                         )
                     } catch (e: Exception) {
-                        Log.e(
-                            "NewProfileFragment",
-                            "Failed to deserialize CV JSON (id=${entity?.id}): ${e.localizedMessage}"
-                        )
+                        Log.e("NewProfileFragment", "Parse error id=${entity.id}", e)
                         null
                     }
                 }
@@ -178,22 +184,37 @@ class NewProfileFragment : Fragment() {
                 profileItems.clear()
                 profileItems.addAll(items)
 
-                Log.d("NewProfileFragment", "Deserialized ${profileItems.size} profiles")
+                // ALWAYS hide progress bar
+                binding.btnProgressBar.isVisible = false
 
-                withContext(Dispatchers.Main) {
-                    binding.btnProgressBar.isVisible = false
-                    adapterListener()
-                }
-            } catch (e: Exception) {
-                Log.e("NewProfileFragment", "Error loading profiles from DB", e)
-                withContext(Dispatchers.Main) {
-                    binding.btnProgressBar.isVisible = false
-                    adapterListener() // still update UI as "empty" on error
-                    Toast.makeText(requireContext(), "Failed to load profiles", Toast.LENGTH_SHORT)
-                        .show()
-                }
+                adapterListener()
             }
         }
+    }
+
+
+    private fun showCreateOptionsDialog(cvData: CvModelRequestDb) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_create_options, null)
+        val dialog = BottomSheetDialog(requireContext(), R.style.MyBottomSheetDialog)
+        dialog.setContentView(dialogView)
+        dialog.setCancelable(true)
+
+        dialogView.findViewById<View>(R.id.cardCv).setOnClickListener {
+            dialog.dismiss()
+            // User chose CV → Generate with your desired template
+            Toast.makeText(requireContext(), "Generating your CV...", Toast.LENGTH_SHORT).show()
+            cvMakerViewModel.generate(cvData, templateName = "modern_blue") // Change template as needed
+        }
+
+        dialogView.findViewById<View>(R.id.cardCoverLetter).setOnClickListener {
+            dialog.dismiss()
+            // Navigate to Cover Letter screen
+            sharedViewModel.cvModelRequestDb = cvData
+            sharedViewModel.profileCase = "createAiCoverLetter"
+//            findNavController().navigate(R.id.action_newProfileFragment_to_coverLetterFragment) // Update destination
+        }
+
+        dialog.show()
     }
 
     // -------------------------------------------------------------------------
@@ -201,19 +222,14 @@ class NewProfileFragment : Fragment() {
     // -------------------------------------------------------------------------
     private fun adapterListener() {
         tryCatch {
-            Log.d("NewProfileFragment", "adapterListener: called")
+            Log.d("NewProfileFragment", "adapterListener: called, size=${profileItems.size}")
 
             if (profileItems.isNotEmpty()) {
-                Log.d(
-                    "NewProfileFragment",
-                    "adapterListener: profileItems not empty, size=${profileItems.size}"
-                )
                 binding.profilesRecyclerview.isVisible = true
                 binding.emptyDataConst.isVisible = false
                 binding.addProfile.isVisible = true
                 profileAdapter.setData(profileItems)
             } else {
-                Log.d("NewProfileFragment", "adapterListener: profileItems empty")
                 binding.profilesRecyclerview.isVisible = false
                 binding.emptyDataConst.isVisible = true
                 binding.addProfile.isVisible = true
@@ -226,8 +242,8 @@ class NewProfileFragment : Fragment() {
                     }
 
                     override fun onItemClick(position: Int, item: CvProfileItem) {
-                        // You can directly open edit here if you want
-                        showEditProfile(item)
+                        showCreateOptionsDialog(item.data)
+//                        showEditProfile(item)
                     }
 
                     override fun onClick(v: View?) {
@@ -265,7 +281,7 @@ class NewProfileFragment : Fragment() {
     }
 
     // -------------------------------------------------------------------------
-    // ⬇ BOTTOM SHEETS (EDIT / RENAME – DB WIRED LATER IF YOU WANT)
+    // ⬇ BOTTOM SHEETS
     // -------------------------------------------------------------------------
     @SuppressLint("SuspiciousIndentation")
     private fun showProfileBottomSheet(position: Int, item: CvProfileItem) {
@@ -276,8 +292,7 @@ class NewProfileFragment : Fragment() {
                 val dialog = BottomSheetDialog(ctx, R.style.MyBottomSheetDialog)
                 dialog.setContentView(sheetBinding.root)
 
-                val name =
-                    item.data.personalDetails?.name ?: "Untitled Profile"
+                val name = item.data.personalDetails?.name ?: "Untitled Profile"
                 sheetBinding.text.text = name
 
                 sheetBinding.renameTxt.setOnClickListener {
@@ -292,8 +307,7 @@ class NewProfileFragment : Fragment() {
 
                 sheetBinding.deleteTxt.setOnClickListener {
                     dialog.dismiss()
-                    // TODO: hook up delete from DB using myViewModel when ready
-                    Toast.makeText(requireContext(), "Delete logic to be implemented", Toast.LENGTH_SHORT).show()
+                    deleteProfile(item)
                 }
 
                 dialog.show()
@@ -301,33 +315,38 @@ class NewProfileFragment : Fragment() {
         }
     }
 
-    private fun showEditProfile(item: CvProfileItem) {
-        tryCatch {
-            // Put full CV data back into shared VM
-            sharedViewModel.cvModelRequestDb = item.data
-            // if you track id in VM:
-            // sharedViewModel.setCvIdForEdit(item.id)  // create helper if needed
-            sharedViewModel.profileCase = "updateProfile"
-
-            findNavController().navigate(R.id.createProfileFragment)
+    private fun deleteProfile(item: CvProfileItem) {
+        lifecycleScope.launch {
+            try {
+                newProfileViewModel.deleteProfileById(item.id) // Now works!
+                Toast.makeText(requireContext(), "Profile deleted", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Delete failed", Toast.LENGTH_SHORT).show()
+            }
         }
+    }
+
+    private fun showEditProfile(item: CvProfileItem) {
+        sharedViewModel.cvModelRequestDb = item.data
+        sharedViewModel.editingProfileId = item.id  // ← CRITICAL
+        sharedViewModel.profileCase = "updateProfile"
+        findNavController().navigate(R.id.createProfileFragment)
     }
 
     private fun showRenameBottomSheet() {
         tryCatch {
             context?.let { ctx ->
-                val binding =
+                val bsBinding =
                     RenameBottomsheetLayoutBinding.inflate(layoutInflater)
                 val dialog = BottomSheetDialog(ctx, R.style.MyBottomSheetDialog)
-                dialog.setContentView(binding.root)
+                dialog.setContentView(bsBinding.root)
 
-                binding.renameButton.setOnClickListener {
-                    // TODO: handle rename if you store a name in DB
+                bsBinding.renameButton.setOnClickListener {
                     dialog.dismiss()
                     Toast.makeText(requireContext(), "Rename saved", Toast.LENGTH_SHORT).show()
                 }
 
-                binding.cancelButton.setOnClickListener {
+                bsBinding.cancelButton.setOnClickListener {
                     dialog.dismiss()
                 }
 

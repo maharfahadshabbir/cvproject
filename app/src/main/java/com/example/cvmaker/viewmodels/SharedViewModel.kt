@@ -25,6 +25,8 @@ class SharedViewModel @Inject constructor() : ViewModel() {   // ✅ Hilt constr
         var selectedProfile: ProfileModelUI? = null
     }
 
+    var editingProfileId: Long? = null  // Add this field!
+
     //working
     var cvModelRequestDb = CvModelRequestDb()
 

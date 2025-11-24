@@ -1,6 +1,7 @@
 package com.example.cvmaker.viewmodels
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.cvmaker.data.repositry.MyRepositry
 import com.example.cvmaker.model.ThumbNailsFavoriteModel
 import com.example.cvmaker.model.profilemodels.FavoriteModel
@@ -8,6 +9,7 @@ import com.example.cvmaker.model.profilemodels.RecycleBin
 import com.example.cvmaker.model.profilemodels.profile.ProfileDb
 import com.example.cvmaker.typeConvertor.CvModelRequestEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -16,6 +18,10 @@ class MyViewModel @Inject constructor(private val repository: MyRepositry) : Vie
     // draft related work
     suspend fun insertCvModelRequest(cvModelRequest: CvModelRequestEntity){
         repository.insertCvModelRequest(cvModelRequest)
+    }
+
+    fun updateCvModelRequest(entity: CvModelRequestEntity) = viewModelScope.launch {
+        repository.updateCvModelRequest(entity)
     }
 
     suspend fun getCvModelRequest(): List<CvModelRequestEntity?>{
