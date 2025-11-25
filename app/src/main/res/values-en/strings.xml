@@ -90,4 +90,8 @@
     <string name="project_title">Project Title</string>
     <string name="saved">Saved</string>
     <string name="saved_successfully">Saved Successfuly</string>
+    <string name="craft_standout_cover_letter">Craft Standout Cover Letter</string>
+    <string name="write_cover_letter">Write Cover Letter</string>
+    <string name="edit_and_create_your_cv">Edit and Create Your CV</string>
+    <string name="create_cv_resume">Create CV / Resume</string>
 </resources>

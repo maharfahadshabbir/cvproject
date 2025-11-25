@@ -234,4 +234,6 @@ class InterestDetailFragment : Fragment() {
             )
         }
     }
+
+
 }

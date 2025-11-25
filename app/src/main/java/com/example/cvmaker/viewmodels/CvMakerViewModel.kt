@@ -41,16 +41,4 @@ class CvMakerViewModel @Inject constructor(
         }
     }
 
-
-
-    /*fun generate(cv: CvModelRequestDb, templateName: String? = null) {
-        _state.value = UiState.Loading
-        viewModelScope.launch {
-            when (val r = repo.generateCv(cv, templateName)) {
-                is GenerateCvResult.Single -> _state.value = UiState.SingleDownload(r.pdfUrl)
-                is GenerateCvResult.Multiple -> _state.value = UiState.MultipleDownloads(r.files)
-                is GenerateCvResult.Error -> _state.value = UiState.Error(r.message)
-            }
-        }
-    }*/
 }

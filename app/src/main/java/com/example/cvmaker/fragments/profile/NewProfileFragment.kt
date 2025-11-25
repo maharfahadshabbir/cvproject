@@ -3,6 +3,7 @@ package com.example.cvmaker.fragments.profile
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -25,8 +26,6 @@ import com.example.cvmaker.model.workingmodels.CvModelRequestDb
 import com.example.cvmaker.model.workingmodels.CvProfileItem
 import com.example.cvmaker.utils.getViewLifecycleOwnerOrNull
 import com.example.cvmaker.utils.tryCatch
-import com.example.cvmaker.viewmodels.CvMakerViewModel
-import com.example.cvmaker.viewmodels.MyViewModel
 import com.example.cvmaker.viewmodels.NewProfileViewModel
 import com.example.cvmaker.viewmodels.SharedViewModel
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -34,6 +33,7 @@ import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.io.File
 
 @AndroidEntryPoint
 class NewProfileFragment : Fragment() {
@@ -43,8 +43,7 @@ class NewProfileFragment : Fragment() {
     private val profileAdapter by lazy { NewProfileAdapter() }
 
     private val sharedViewModel by activityViewModels<SharedViewModel>()
-    private val cvMakerViewModel by activityViewModels<CvMakerViewModel>()
-    private val myViewModel by activityViewModels<MyViewModel>()   // kept for future delete/rename if you use it
+
     private val newProfileViewModel by viewModels<NewProfileViewModel>()
 
     private var lastClickTime = 0L
@@ -55,14 +54,10 @@ class NewProfileFragment : Fragment() {
     // Local list for items mapped from DB to UI model
     private val profileItems: MutableList<CvProfileItem> = mutableListOf()
 
-    // Keyboard padding flags (kept in case you use them later)
-    private var originalRootPaddingBottom: Int = 0
     private var isOriginalPaddingCaptured: Boolean = false
-
 
     companion object{
         val draftItems: MutableList<CvProfileItem> = mutableListOf()
-
     }
 
     override fun onCreateView(
@@ -90,7 +85,6 @@ class NewProfileFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // 🔁 Always refresh from DB when we return here (including after save)
 
     }
 
@@ -115,9 +109,6 @@ class NewProfileFragment : Fragment() {
         isOriginalPaddingCaptured = false
     }
 
-    // -------------------------------------------------------------------------
-    // 🔙 BACK PRESS
-    // -------------------------------------------------------------------------
     private fun backPressed() {
         when (sharedViewModel.noprofile) {
             "createAiCoverLetter" -> {
@@ -149,17 +140,10 @@ class NewProfileFragment : Fragment() {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // 🔄 INIT & LOAD DATA
-    // -------------------------------------------------------------------------
     private fun initListener() {
         clickListener()
     }
 
-    /**
-     * Trigger ViewModel to fetch from Room.
-     * Actual list will come through StateFlow in observeProfiles().
-     */
     private fun loadProfilesFromDb() {
         binding.btnProgressBar.isVisible = true
         Log.d("NewProfileFragment", "loadProfilesFromDb: calling VM.loadProfiles()")
@@ -173,9 +157,8 @@ class NewProfileFragment : Fragment() {
 
                 val gson = Gson()
 
-                // Filter entities before mapping
                 val filteredEntities = entities.filter { it.profileOrDraft } // only true profiles
-                var filteredEntitiesDrafts = entities.filter { !it.profileOrDraft } // only drafts
+                val filteredEntitiesDrafts = entities.filter { !it.profileOrDraft } // only drafts
 
                 val itemsDraft = filteredEntitiesDrafts.mapNotNull { entity ->
                     try {
@@ -217,56 +200,11 @@ class NewProfileFragment : Fragment() {
         }
     }
 
-
-    /*
-        private fun observeProfiles() {
-            viewLifecycleOwner.lifecycleScope.launch {
-                newProfileViewModel.profiles.collectLatest { entities ->
-                    Log.d("NewProfileFragment", "Received ${entities.size} profiles")
-
-                    val gson = Gson()
-                    val items = entities.mapNotNull { entity ->
-                        try {
-                            val cv = gson.fromJson(entity.json, CvModelRequestDb::class.java)
-                            CvProfileItem(
-                                id = entity.id,
-                                data = cv,
-                                updatedAt = entity.updateDate
-                            )
-                        } catch (e: Exception) {
-                            Log.e("NewProfileFragment", "Parse error id=${entity.id}", e)
-                            null
-                        }
-                    }
-
-                    profileItems.clear()
-                    profileItems.addAll(items)
-
-                    // ALWAYS hide progress bar
-                    binding.btnProgressBar.isVisible = false
-
-                    adapterListener()
-                }
-            }
-        }
-    */
-
-
     private fun showCreateOptionsDialog(cvData: CvModelRequestDb) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_create_options, null)
         val dialog = BottomSheetDialog(requireContext(), R.style.MyBottomSheetDialog)
         dialog.setContentView(dialogView)
         dialog.setCancelable(true)
-
- /*       dialogView.findViewById<View>(R.id.cardCv).setOnClickListener {
-            dialog.dismiss()
-            // User chose CV → Generate with your desired template
-            Toast.makeText(requireContext(), "Generating your CV...", Toast.LENGTH_SHORT).show()
-            cvMakerViewModel.generate(cvData, templateName = "modern_blue") // Change template as needed
-            findNavController().navigate(R.id.cvTemplateFragment)
-
-        }*/
-
 
         dialogView.findViewById<View>(R.id.cardCv).setOnClickListener {
             dialog.dismiss()
@@ -277,23 +215,16 @@ class NewProfileFragment : Fragment() {
             findNavController().navigate(R.id.cvTemplateFragment)
         }
 
-
-
-
         dialogView.findViewById<View>(R.id.cardCoverLetter).setOnClickListener {
             dialog.dismiss()
             // Navigate to Cover Letter screen
             sharedViewModel.cvModelRequestDb = cvData
             sharedViewModel.profileCase = "createAiCoverLetter"
-//            findNavController().navigate(R.id.action_newProfileFragment_to_coverLetterFragment) // Update destination
         }
 
         dialog.show()
     }
 
-    // -------------------------------------------------------------------------
-    // ♻ ADAPTER + UI STATE
-    // -------------------------------------------------------------------------
     private fun adapterListener() {
         tryCatch {
             Log.d("NewProfileFragment", "adapterListener: called, size=${profileItems.size}")
@@ -329,9 +260,6 @@ class NewProfileFragment : Fragment() {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // 🖱 CLICKS
-    // -------------------------------------------------------------------------
     private fun clickListener() {
         binding.backButton.setOnClickListener {
             backPressed()
@@ -343,21 +271,16 @@ class NewProfileFragment : Fragment() {
                 if (now - lastClickTime < clickDelay) return@tryCatch
                 lastClickTime = now
 
-                // Reset VM for creating new profile
-                sharedViewModel.selectedimageasFile = null
-                sharedViewModel.selectedimageUri = null
+                sharedViewModel.selectedimageasFile = CvModelRequestDb().personalDetails?.imageUri as File?
+                sharedViewModel.selectedimageUri = CvModelRequestDb().personalDetails?.imageUri as Uri?
                 sharedViewModel.cvModelRequestDb = CvModelRequestDb()
                 sharedViewModel.profileCase = "createProfile"
 
-                // Navigate to Create Profile screen
                 findNavController().navigate(R.id.createProfileFragment)
             }
         }
     }
 
-    // -------------------------------------------------------------------------
-    // ⬇ BOTTOM SHEETS
-    // -------------------------------------------------------------------------
     @SuppressLint("SuspiciousIndentation")
     private fun showProfileBottomSheet(position: Int, item: CvProfileItem) {
         tryCatch {
@@ -393,7 +316,7 @@ class NewProfileFragment : Fragment() {
     private fun deleteProfile(item: CvProfileItem) {
         lifecycleScope.launch {
             try {
-                newProfileViewModel.deleteProfileById(item.id) // Now works!
+                newProfileViewModel.deleteProfileById(item.id)
                 Toast.makeText(requireContext(), "Profile deleted", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Delete failed", Toast.LENGTH_SHORT).show()

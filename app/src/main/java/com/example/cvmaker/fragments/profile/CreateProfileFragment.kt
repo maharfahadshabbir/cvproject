@@ -189,7 +189,7 @@ class CreateProfileFragment : Fragment() {
                         }
 
                         deserializedList.forEachIndexed { index, cv ->
-                            Log.d("SaveCV", "🧩 CV #$index -> Personal: ${cv.personalDetails?.name}, Education count: ${cv.educationList?.size}")
+                            Log.d("SaveCV", "🧩 CV #$index -> Personal: ${cv.personalDetails?.name},  count: ${cv.educationList?.size}")
                         }
 
                     }

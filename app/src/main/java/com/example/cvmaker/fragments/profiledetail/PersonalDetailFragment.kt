@@ -146,11 +146,11 @@ class PersonalDetailFragment : Fragment() {
     }
 
     private fun onGenderSelected(gender: String) {
-        sharedViewModel.cvModel.gender = gender
+        sharedViewModel.cvModel.personalDetails?.gender = gender
     }
 
     private fun onMaritalSelected(status: String) {
-        sharedViewModel.cvModel.marital_status = status
+        sharedViewModel.cvModel.personalDetails?.maritalStatus = status
     }
 
     private fun previewCv() {
@@ -254,7 +254,7 @@ class PersonalDetailFragment : Fragment() {
             { _, year, month, day ->
                 calendar.set(year, month, day)
                 target.setText(dateFormat.format(calendar.time))
-                sharedViewModel.cvModel.date_of_birth = dateFormat.format(calendar.time)
+                sharedViewModel.cvModel.personalDetails?.dateOfBirth = dateFormat.format(calendar.time)
             },
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
@@ -366,20 +366,20 @@ class PersonalDetailFragment : Fragment() {
             }
         } ?: run {
             // 🔁 Fallback to old cvModel (if any old data still there)
-            sharedViewModel.cvModel.let {
-                nameEdittext.setText(it.first_name)
-                emailEdittext.setText(it.cv_email)
-                phoneEdittext.setText(it.phone)
-                addressEdittext.setText(it.address)
-                etDob.setText(it.date_of_birth)
+            sharedViewModel.cvModel.personalDetails.let {
+                nameEdittext.setText(it?.name)
+                emailEdittext.setText(it?.email)
+                phoneEdittext.setText(it?.phone)
+                addressEdittext.setText(it?.address)
+                etDob.setText(it?.dateOfBirth)
 
-                when (it.gender) {
+                when (it?.gender) {
                     "Male" -> rbMale.isChecked = true
                     "Female" -> rbFemale.isChecked = true
                     "Other" -> rbOther.isChecked = true
                 }
 
-                when (it.marital_status) {
+                when (it?.maritalStatus) {
                     "Married" -> rbMarried.isChecked = true
                     "Unmarried" -> rbUnmarried.isChecked = true
                 }

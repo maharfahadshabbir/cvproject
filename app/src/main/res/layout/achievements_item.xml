@@ -136,14 +136,15 @@
                 android:layout_marginTop="@dimen/_8sdp"
                 android:background="@drawable/ic_bg_pro"
                 android:hint="MM/YY"
-                android:inputType="text"
                 android:drawableEnd="@drawable/calendar_gray"
                 android:paddingHorizontal="@dimen/_10sdp"
                 android:paddingVertical="@dimen/_10sdp"
                 android:textColor="@color/textColor"
                 android:textSize="@dimen/_12sdp"
+                android:focusable="false"
+                android:clickable="true"
+                android:cursorVisible="false"
                 app:layout_constraintTop_toBottomOf="@id/tvYearDate" />
-
             <!-- Description -->
             <TextView
                 android:id="@+id/tvDesc"

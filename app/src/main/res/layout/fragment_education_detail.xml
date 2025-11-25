@@ -91,7 +91,7 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- ===================== Scrollable Education Section ===================== -->
+    <!-- ===================== Scrollable  Section ===================== -->
     <ScrollView
         android:id="@+id/scrollEducation"
         android:layout_width="match_parent"

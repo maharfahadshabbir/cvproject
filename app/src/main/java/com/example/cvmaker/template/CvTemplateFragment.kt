@@ -1,3 +1,4 @@
+import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.content.Context
 import android.net.Uri
@@ -9,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -21,10 +23,6 @@ import com.example.cvmaker.databinding.FragmentCvTemplateBinding
 import com.example.cvmaker.model.workingmodels.CvModelRequestDb
 import com.example.cvmaker.viewmodels.SharedViewModel
 import com.rajat.pdfviewer.PdfRendererView
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.net.URL
 
 class CvTemplateFragment : Fragment() {
 
@@ -58,8 +56,9 @@ class CvTemplateFragment : Fragment() {
         requireActivity().onBackPressedDispatcher.addCallback(
             viewLifecycleOwner,
             object : OnBackPressedCallback(true) {
+                @SuppressLint("SetTextI18n")
                 override fun handleOnBackPressed() {
-                    if (binding.pdfViewCV.visibility == View.VISIBLE) {
+                    if (binding.pdfViewCV.isVisible) {
                         // Hide PDF and show templates again
                         binding.pdfViewCV.visibility = View.GONE
                         binding.btnDownloadCV.visibility = View.GONE
@@ -142,11 +141,13 @@ class CvTemplateFragment : Fragment() {
         )
 
         binding.pdfViewCV.statusListener = object : PdfRendererView.StatusCallBack {
+            @SuppressLint("SetTextI18n")
             override fun onPdfLoadStart() {
                 Log.d(TAG, "PDF load started")
                 binding.progressText.text = "Loading CV... 0%"
             }
 
+            @SuppressLint("SetTextI18n")
             override fun onPdfLoadProgress(progress: Int, downloadedBytes: Long, totalBytes: Long?) {
                 Log.d(TAG, "PDF loading: $progress%")
                 binding.progressBar.progress = progress

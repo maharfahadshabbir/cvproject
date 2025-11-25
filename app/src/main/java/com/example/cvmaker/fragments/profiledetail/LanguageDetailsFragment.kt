@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
@@ -256,18 +257,23 @@ class LanguageDetailsFragment : Fragment() {
     /* -------------------- Keyboard padding -------------------- */
 
     private fun handleKeyboard(root: View) {
-        root.viewTreeObserver.addOnGlobalLayoutListener {
-            val r = Rect()
-            root.getWindowVisibleDisplayFrame(r)
-            val screenHeight = root.rootView.height
-            val keypadHeight = screenHeight - r.bottom
+        root.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                val currentBinding = _binding
+                if (currentBinding == null) {
+                    root.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                    return
+                }
 
-            binding.scrollLanguages.setPadding(
-                binding.scrollLanguages.paddingLeft,
-                binding.scrollLanguages.paddingTop,
-                binding.scrollLanguages.paddingRight,
-                if (keypadHeight > screenHeight * 0.15) keypadHeight else 0
-            )
-        }
+                val r = Rect()
+                root.getWindowVisibleDisplayFrame(r)
+                val screenHeight = root.rootView.height
+                val keypadHeight = screenHeight - r.bottom
+
+                val bottomPadding = if (keypadHeight > screenHeight * 0.15) keypadHeight else 0
+
+                currentBinding.scrollLanguages.setPadding(0, 0, 0, bottomPadding)
+            }
+        })
     }
 }
