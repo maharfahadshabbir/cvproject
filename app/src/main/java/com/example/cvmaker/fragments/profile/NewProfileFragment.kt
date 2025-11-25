@@ -59,6 +59,12 @@ class NewProfileFragment : Fragment() {
     private var originalRootPaddingBottom: Int = 0
     private var isOriginalPaddingCaptured: Boolean = false
 
+
+    companion object{
+        val draftItems: MutableList<CvProfileItem> = mutableListOf()
+
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -160,14 +166,31 @@ class NewProfileFragment : Fragment() {
         newProfileViewModel.loadProfiles()
     }
 
-
     private fun observeProfiles() {
         viewLifecycleOwner.lifecycleScope.launch {
             newProfileViewModel.profiles.collectLatest { entities ->
                 Log.d("NewProfileFragment", "Received ${entities.size} profiles")
 
                 val gson = Gson()
-                val items = entities.mapNotNull { entity ->
+
+                // Filter entities before mapping
+                val filteredEntities = entities.filter { it.profileOrDraft } // only true profiles
+                var filteredEntitiesDrafts = entities.filter { !it.profileOrDraft } // only drafts
+
+                val itemsDraft = filteredEntitiesDrafts.mapNotNull { entity ->
+                    try {
+                        val cv = gson.fromJson(entity.json, CvModelRequestDb::class.java)
+                        CvProfileItem(
+                            id = entity.id,
+                            data = cv,
+                            updatedAt = entity.updateDate
+                        )
+                    } catch (e: Exception) {
+                        Log.e("NewProfileFragment", "Parse error id=${entity.id}", e)
+                        null
+                    }
+                }
+                val items = filteredEntities.mapNotNull { entity ->
                     try {
                         val cv = gson.fromJson(entity.json, CvModelRequestDb::class.java)
                         CvProfileItem(
@@ -181,6 +204,8 @@ class NewProfileFragment : Fragment() {
                     }
                 }
 
+                draftItems.clear()
+                draftItems.addAll(itemsDraft)
                 profileItems.clear()
                 profileItems.addAll(items)
 
@@ -193,18 +218,67 @@ class NewProfileFragment : Fragment() {
     }
 
 
+    /*
+        private fun observeProfiles() {
+            viewLifecycleOwner.lifecycleScope.launch {
+                newProfileViewModel.profiles.collectLatest { entities ->
+                    Log.d("NewProfileFragment", "Received ${entities.size} profiles")
+
+                    val gson = Gson()
+                    val items = entities.mapNotNull { entity ->
+                        try {
+                            val cv = gson.fromJson(entity.json, CvModelRequestDb::class.java)
+                            CvProfileItem(
+                                id = entity.id,
+                                data = cv,
+                                updatedAt = entity.updateDate
+                            )
+                        } catch (e: Exception) {
+                            Log.e("NewProfileFragment", "Parse error id=${entity.id}", e)
+                            null
+                        }
+                    }
+
+                    profileItems.clear()
+                    profileItems.addAll(items)
+
+                    // ALWAYS hide progress bar
+                    binding.btnProgressBar.isVisible = false
+
+                    adapterListener()
+                }
+            }
+        }
+    */
+
+
     private fun showCreateOptionsDialog(cvData: CvModelRequestDb) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_create_options, null)
         val dialog = BottomSheetDialog(requireContext(), R.style.MyBottomSheetDialog)
         dialog.setContentView(dialogView)
         dialog.setCancelable(true)
 
-        dialogView.findViewById<View>(R.id.cardCv).setOnClickListener {
+ /*       dialogView.findViewById<View>(R.id.cardCv).setOnClickListener {
             dialog.dismiss()
             // User chose CV → Generate with your desired template
             Toast.makeText(requireContext(), "Generating your CV...", Toast.LENGTH_SHORT).show()
             cvMakerViewModel.generate(cvData, templateName = "modern_blue") // Change template as needed
+            findNavController().navigate(R.id.cvTemplateFragment)
+
+        }*/
+
+
+        dialogView.findViewById<View>(R.id.cardCv).setOnClickListener {
+            dialog.dismiss()
+
+            // Save data in SharedViewModel
+            sharedViewModel.setCvData(cvData) // cvData is your CvModelRequestDb instance
+            // Navigate to CV Template fragment
+            findNavController().navigate(R.id.cvTemplateFragment)
         }
+
+
+
 
         dialogView.findViewById<View>(R.id.cardCoverLetter).setOnClickListener {
             dialog.dismiss()
@@ -223,6 +297,7 @@ class NewProfileFragment : Fragment() {
     private fun adapterListener() {
         tryCatch {
             Log.d("NewProfileFragment", "adapterListener: called, size=${profileItems.size}")
+
 
             if (profileItems.isNotEmpty()) {
                 binding.profilesRecyclerview.isVisible = true

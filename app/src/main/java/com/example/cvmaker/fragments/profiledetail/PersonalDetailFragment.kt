@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -92,12 +93,17 @@ class PersonalDetailFragment : Fragment() {
 
     private fun ensurePersonalModel(): PersonalDetailModel {
         val existing = sharedViewModel.cvModelRequestDb.personalDetails
-        if (existing != null) return existing
-
-        val newModel = PersonalDetailModel()
-        sharedViewModel.cvModelRequestDb.personalDetails = newModel
-        return newModel
+        return if (existing != null) {
+            Log.d("ensurePersonalModel", "Existing PersonalDetailModel found: $existing")
+            existing
+        } else {
+            val newModel = PersonalDetailModel()
+            sharedViewModel.cvModelRequestDb.personalDetails = newModel
+            Log.d("ensurePersonalModel", "No existing PersonalDetailModel, created new one: $newModel")
+            newModel
+        }
     }
+
 
 
     private fun setupClicks() = with(binding) {

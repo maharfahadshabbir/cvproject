@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -51,6 +52,12 @@ class CreateProfileFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {
+            showSaveDraftDialog()
+        }
+        if (sharedViewModel.profileCase == "updateProfile"){
+
+        }
         setClicks()
     }
 
@@ -210,6 +217,9 @@ class CreateProfileFragment : Fragment() {
         }
 
 
+
+
+
         profile.setOnClickListener {
             lifecycleScope.launch {
                 try {
@@ -255,6 +265,62 @@ class CreateProfileFragment : Fragment() {
 
 
     }
+
+    private fun showSaveDraftDialog() {
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(requireContext())
+        dialog.setTitle("Save Draft?")
+        dialog.setMessage("Are you sure you want to save your profile as draft or discard changes?")
+
+        dialog.setPositiveButton("Save as Draft") { _, _ ->
+            saveAsDraft()
+        }
+
+        dialog.setNegativeButton("Discard") { _, _ ->
+            findNavController().popBackStack()
+        }
+
+        dialog.setNeutralButton("Cancel", null)
+
+        dialog.show()
+    }
+
+
+
+
+    private fun saveAsDraft() {
+        lifecycleScope.launch {
+            try {
+                val cvModel = sharedViewModel.cvModelRequestDb
+                if (cvModel == null) {
+                    Toast.makeText(requireContext(), "Nothing to save", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+
+                val gson = Gson()
+                val json = gson.toJson(cvModel)
+                val currentTime = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date())
+
+                val entity = CvModelRequestEntity(
+                    json = json,
+                    draftName = "Draft_${System.currentTimeMillis()}",
+                    profileOrDraft = false,   // **THIS IS DRAFT**
+                    updateDate = currentTime,
+                    creationDate = currentTime,
+                    userId = UUID.randomUUID().toString()
+                )
+
+                myViewModel.insertCvModelRequest(entity)
+
+                Toast.makeText(requireContext(), "Draft saved", Toast.LENGTH_SHORT).show()
+                findNavController().popBackStack()
+
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Failed to save draft", Toast.LENGTH_SHORT).show()
+                e.printStackTrace()
+            }
+        }
+    }
+
 
     override fun onDestroyView() {
         super.onDestroyView()

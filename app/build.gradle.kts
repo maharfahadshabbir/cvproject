@@ -115,4 +115,6 @@ dependencies {
 
     // Rich editor (no change)
     implementation("jp.wasabeef:richeditor-android:2.0.0")
+
+    implementation("io.github.afreakyelf:Pdf-Viewer:2.3.7") // replace with latest version
 }

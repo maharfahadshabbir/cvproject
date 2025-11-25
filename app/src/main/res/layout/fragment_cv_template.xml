@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/containerCvTemplate"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/tvSelectTemplate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select a Template"
+        android:textSize="18sp"
+        android:layout_gravity="center_horizontal"
+        android:paddingBottom="12dp"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvTemplates"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"/>
+
+    <Button
+        android:id="@+id/btnGenerateCV"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Generate CV"
+        android:enabled="false"
+        android:layout_marginTop="16dp"/>
+
+    <WebView
+        android:id="@+id/webViewCV"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone"
+        android:layout_marginTop="16dp"/>
+
+    <!-- Progress Bar -->
+    <!-- VIP Progress Overlay -->
+    <LinearLayout
+        android:id="@+id/progressOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="#AA000000"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="250dp"
+            android:layout_height="8dp"
+            android:progress="0"
+            android:progressTint="@color/blue"
+            android:indeterminate="false"
+            android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:id="@+id/progressText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:text="Loading CV... 0%"/>
+    </LinearLayout>
+
+    <!-- PDF Viewer -->
+    <!-- PDF Viewer -->
+    <com.rajat.pdfviewer.PdfRendererView
+        android:id="@+id/pdfViewCV"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone"/>
+    <Button
+        android:id="@+id/btnDownloadCV"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Download CV"
+        android:visibility="gone"
+        android:layout_marginTop="8dp"/>
+</LinearLayout>

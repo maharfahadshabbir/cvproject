@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
@@ -52,13 +53,7 @@ class AchievementsDetailsFragment : Fragment() {
         binding.previewCv.isVisible = checkProfileCase(sharedViewModel)
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        onBackPressedCallback?.remove()
-        onBackPressedCallback = null
-        adapter = null
-        _binding = null
-    }
+
 
     // -------------------------------------------------------------------------
     // 🔙 BACK PRESS
@@ -259,19 +254,35 @@ class AchievementsDetailsFragment : Fragment() {
     // -------------------------------------------------------------------------
     // ⌨️ KEYBOARD HANDLING
     // -------------------------------------------------------------------------
+    private var keyboardListener: ViewTreeObserver.OnGlobalLayoutListener? = null
+
     private fun handleKeyboard(root: View) {
-        root.viewTreeObserver.addOnGlobalLayoutListener {
+        keyboardListener = ViewTreeObserver.OnGlobalLayoutListener {
             val r = Rect()
             root.getWindowVisibleDisplayFrame(r)
             val screenHeight = root.rootView.height
             val keypadHeight = screenHeight - r.bottom
 
-            binding.scrollAchievements.setPadding(
-                binding.scrollAchievements.paddingLeft,
-                binding.scrollAchievements.paddingTop,
-                binding.scrollAchievements.paddingRight,
+            _binding?.scrollAchievements?.setPadding(
+                _binding?.scrollAchievements?.paddingLeft ?: 0,
+                _binding?.scrollAchievements?.paddingTop ?: 0,
+                _binding?.scrollAchievements?.paddingRight ?: 0,
                 if (keypadHeight > screenHeight * 0.15) keypadHeight else 0
             )
         }
+
+        root.viewTreeObserver.addOnGlobalLayoutListener(keyboardListener)
     }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        keyboardListener?.let { listener ->
+            view?.viewTreeObserver?.removeOnGlobalLayoutListener(listener)
+        }
+        onBackPressedCallback?.remove()
+        onBackPressedCallback = null
+        adapter = null
+        _binding = null
+    }
+
 }

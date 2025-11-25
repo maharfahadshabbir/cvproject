@@ -25,6 +25,14 @@ class SharedViewModel @Inject constructor() : ViewModel() {   // ✅ Hilt constr
         var selectedProfile: ProfileModelUI? = null
     }
 
+    private val _cvData = MutableLiveData<CvModelRequestDb>()
+    val cvData: LiveData<CvModelRequestDb> get() = _cvData
+
+    fun setCvData(data: CvModelRequestDb) {
+        _cvData.value = data
+    }
+
+
     var editingProfileId: Long? = null  // Add this field!
 
     //working

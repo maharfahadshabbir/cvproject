@@ -159,4 +159,8 @@
         android:name="com.example.cvmaker.fragments.profiledetail.ProjectDetailsFragment"
         android:label="fragment_project_details"
         tools:layout="@layout/fragment_project_details" />
+    <fragment
+        android:id="@+id/cvTemplateFragment"
+        android:name="CvTemplateFragment"
+        android:label="CvTemplateFragment" />
 </navigation>

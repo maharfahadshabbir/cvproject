@@ -16,6 +16,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavController
 import com.example.cvmaker.activities.MainActivity
+import com.example.cvmaker.cv.CvApiRequest
+import com.example.cvmaker.model.workingmodels.CvModelRequestDb
 import java.io.FileNotFoundException
 import java.io.IOException
 
