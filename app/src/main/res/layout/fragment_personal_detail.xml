@@ -555,7 +555,8 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:background="@drawable/ic_bg_pro"
+                        android:background="@drawable/bg_option_selector"
+                        android:textColor="@color/text_option_selector"
                         android:button="@null"
                         android:gravity="center"
                         android:paddingVertical="@dimen/_10sdp"
@@ -567,7 +568,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="@dimen/_8sdp"
                         android:layout_weight="1"
-                        android:background="@drawable/ic_bg_pro"
+                        android:background="@drawable/bg_option_selector"
+                        android:textColor="@color/text_option_selector"
                         android:button="@null"
                         android:gravity="center"
                         android:paddingVertical="@dimen/_10sdp"
@@ -579,12 +581,14 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="@dimen/_8sdp"
                         android:layout_weight="1"
-                        android:background="@drawable/ic_bg_pro"
+                        android:background="@drawable/bg_option_selector"
+                        android:textColor="@color/text_option_selector"
                         android:button="@null"
                         android:gravity="center"
                         android:paddingVertical="@dimen/_10sdp"
                         android:text="Other" />
                 </RadioGroup>
+
 
                 <!-- Marital Status -->
                 <TextView
@@ -615,7 +619,8 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:background="@drawable/ic_bg_pro"
+                        android:background="@drawable/bg_option_selector"
+                        android:textColor="@color/text_option_selector"
                         android:button="@null"
                         android:gravity="center"
                         android:paddingVertical="@dimen/_10sdp"
@@ -627,12 +632,15 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="@dimen/_8sdp"
                         android:layout_weight="1"
-                        android:background="@drawable/ic_bg_pro"
+                        android:background="@drawable/bg_option_selector"
+                        android:textColor="@color/text_option_selector"
                         android:button="@null"
                         android:gravity="center"
                         android:paddingVertical="@dimen/_10sdp"
                         android:text="Unmarried" />
                 </RadioGroup>
+
+
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <!-- Progress (hidden) -->
