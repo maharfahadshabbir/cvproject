@@ -39,6 +39,9 @@ class HomeFragment : Fragment() {
         binding.cardProfile.setOnClickListener {
             findNavController().navigate(R.id.profileDraftFragment)
         }
+        binding.createAiCv.setOnClickListener {
+            findNavController().navigate(R.id.profileDraftFragment)
+        }
 
     }
 

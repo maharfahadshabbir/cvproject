@@ -10,7 +10,7 @@
         android:id="@+id/tvSelectTemplate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Select a Template"
+        android:text="@string/select_a_template"
         android:textSize="18sp"
         android:layout_gravity="center_horizontal"
         android:paddingBottom="12dp"/>
@@ -25,7 +25,7 @@
         android:id="@+id/btnGenerateCV"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Generate CV"
+        android:text="@string/generate_cv"
         android:enabled="false"
         android:layout_marginTop="16dp"/>
 
@@ -64,7 +64,7 @@
             android:layout_height="wrap_content"
             android:textColor="@android:color/white"
             android:textSize="18sp"
-            android:text="Loading CV... 0%"/>
+            android:text="@string/loading_cv_0"/>
     </LinearLayout>
 
     <!-- PDF Viewer -->
@@ -79,7 +79,7 @@
         android:id="@+id/btnDownloadCV"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Download CV"
+        android:text="@string/download_cv"
         android:visibility="gone"
         android:layout_marginTop="8dp"/>
 </LinearLayout>

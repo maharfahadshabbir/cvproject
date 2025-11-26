@@ -22,11 +22,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:drawableStart="@drawable/crown_ic"
-        android:text="Pro"
+        android:text="@string/pro"
         android:textColor="@color/white"
         android:paddingHorizontal="@dimen/_10sdp"
         android:paddingVertical="@dimen/_5sdp"
         android:gravity="center"
+        android:visibility="gone"
         android:layout_marginEnd="@dimen/_10sdp"
         android:textAlignment="center"
         android:background="@drawable/blue_horizantal_gradient_less_rounded"
@@ -38,7 +39,7 @@
         android:id="@+id/bg_home"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:background="@drawable/home_bg"
+        android:background="@drawable/home_bg__3_"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHeight_percent="0.3"
         app:layout_constraintStart_toStartOf="parent"
@@ -48,7 +49,7 @@
 
     <TextView
         android:id="@+id/app_name"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/_10sdp"
         android:layout_marginBottom="@dimen/_10sdp"
@@ -58,6 +59,7 @@
         android:textColor="@color/black"
         android:textSize="@dimen/_14sdp"
         android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="@id/topGuideline"
         app:layout_constraintBottom_toTopOf="@id/subText"
         app:layout_constraintStart_toStartOf="@id/bg_home" />
 
@@ -67,7 +69,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/_10sdp"
-        android:text="Create your own resume like a \nPro"
+        android:text="@string/create_your_own_resume_like_a_npro"
         android:textColor="@color/black"
         android:textSize="@dimen/_10sdp"
         android:textStyle=""
@@ -79,7 +81,7 @@
 
     <TextView
         android:id="@+id/createAiCv"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="@dimen/_25sdp"
         android:layout_marginTop="@dimen/_20sdp"
         android:layout_marginBottom="@dimen/_20sdp"
@@ -88,11 +90,33 @@
         android:ellipsize="end"
         android:singleLine="true"
         android:paddingHorizontal="@dimen/_15sdp"
-        android:text="Create Cv"
+        android:text="@string/create_cv"
         android:textColor="@color/white"
+        app:layout_constraintEnd_toEndOf="@id/topGuideline"
         app:layout_constraintBottom_toBottomOf="@id/bg_home"
         app:layout_constraintHorizontal_bias="0"
         app:layout_constraintStart_toStartOf="@id/app_name" />
+
+    <!-- GUIDELINE BETWEEN ICON AND TEXTS -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/topGuideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.52" />   <!-- adjust % as needed -->
+
+
+
+    <View
+        android:id="@+id/bg_home_icon"
+        android:layout_width="@dimen/_140sdp"
+        android:layout_height="@dimen/_110sdp"
+        android:background="@drawable/icon_home_main"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_bias="0.8"
+        app:layout_constraintStart_toEndOf="@id/topGuideline"
+        app:layout_constraintTop_toTopOf="@id/bg_home"
+        app:layout_constraintBottom_toBottomOf="@id/bg_home"/>
 
 
     <ScrollView
@@ -114,7 +138,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Get Hired Right Away"
+                android:text="@string/get_hired_right_away"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#000"
@@ -154,23 +178,23 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Create Your Profile"
+                            android:text="@string/create_your_profile"
                             android:textStyle="bold"
                             android:layout_gravity="start"
                             android:layout_marginTop="@dimen/_5sdp"
                             android:layout_marginStart="@dimen/_10sdp"
                             android:textColor="#000"
-                            android:textSize="14sp"/>
+                            android:textSize="13sp"/>
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Edit and Create Your Profile"
+                            android:text="@string/edit_and_create_your_profile"
                             android:textColor="#555"
                             android:layout_gravity="start"
-                            android:layout_marginVertical="@dimen/_3sdp"
+                            android:layout_marginVertical="@dimen/_2sdp"
                             android:layout_marginStart="@dimen/_10sdp"
-                            android:textSize="11sp"/>
+                            android:textSize="10sp"/>
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
@@ -204,23 +228,24 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="AI Cover Letter"
+                            android:text="@string/ai_cover_letter"
                             android:textStyle="bold"
                             android:layout_gravity="start"
                             android:layout_marginTop="@dimen/_5sdp"
                             android:layout_marginStart="@dimen/_10sdp"
                             android:textColor="#000"
-                            android:textSize="14sp"/>
+                            android:textSize="13sp"/>
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Craft Standout Cover Letter"
+                            android:text="@string/craft_standout_cover_letter"
                             android:textColor="#555"
-                            android:layout_marginVertical="@dimen/_3sdp"
+                            android:layout_marginVertical="@dimen/_2sdp"
                             android:layout_gravity="start"
                             android:layout_marginStart="@dimen/_10sdp"
-                            android:textSize="11sp"/>
+
+                            android:textSize="10sp"/>
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
             </androidx.constraintlayout.widget.ConstraintLayout>
@@ -237,7 +262,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Other Letters"
+                    android:text="@string/other_letters"
                     android:textStyle="bold"
                     android:textSize="16sp"
                     android:textColor="#000" />
@@ -245,7 +270,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="See all ›"
+                    android:text="@string/see_all"
                     android:textColor="#0085FF"
                     android:textSize="13sp" />
             </LinearLayout>
@@ -285,13 +310,13 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Resignation \nLetter"
+                            android:text="@string/resignation_nletter"
                             android:textStyle="bold"
                             android:layout_gravity="start"
                             android:layout_marginTop="@dimen/_5sdp"
                             android:layout_marginStart="@dimen/_5sdp"
                             android:textColor="#000"
-                            android:textSize="11sp"/>
+                            android:textSize="10sp"/>
 
 
                     </LinearLayout>
@@ -325,13 +350,13 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Promotion \nLetter"
+                            android:text="@string/promotion_nletter"
                             android:textStyle="bold"
                             android:layout_gravity="start"
                             android:layout_marginTop="@dimen/_5sdp"
                             android:layout_marginStart="@dimen/_5sdp"
                             android:textColor="#000"
-                            android:textSize="11sp"/>
+                            android:textSize="10sp"/>
 
 
                     </LinearLayout>
@@ -364,13 +389,13 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Reference \nLetter"
+                            android:text="@string/reference_nletter"
                             android:textStyle="bold"
                             android:layout_gravity="start"
                             android:layout_marginTop="@dimen/_5sdp"
                             android:layout_marginStart="@dimen/_5sdp"
                             android:textColor="#000"
-                            android:textSize="11sp"/>
+                            android:textSize="10sp"/>
 
 
                     </LinearLayout>
@@ -389,7 +414,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Trending Templates"
+                    android:text="@string/trending_templates"
                     android:textStyle="bold"
                     android:layout_weight="1"
                     android:textSize="16sp"
@@ -398,7 +423,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="See all ›"
+                    android:text="@string/see_all"
                     android:textColor="#0085FF"
                     android:textSize="13sp"/>
             </LinearLayout>
